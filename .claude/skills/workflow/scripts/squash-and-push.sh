@@ -6,7 +6,12 @@
 # commit using the provided subject, then pushes with --force-with-lease.
 #
 # Usage:
-#   .claude/skills/workflow/scripts/squash-and-push.sh <task-id> "<conventional-commit-subject>"
+#   .claude/skills/workflow/scripts/squash-and-push.sh <task-id> "<conventional-commit-subject>" [base-branch]
+#
+# [base-branch] is the branch the feature branch was cut from (recorded by the
+# intake skill). Without it, a branch cut from anything other than main gets
+# squashed against origin/main, folding the parent branch's own commits into
+# the task commit.
 #
 # Exit codes:
 #   0  Squashed (or nothing to squash) and pushed successfully.
@@ -18,16 +23,29 @@
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-  echo "usage: squash-and-push.sh <task-id> \"<conventional-commit-subject>\"" >&2
+  echo "usage: squash-and-push.sh <task-id> \"<conventional-commit-subject>\" [base-branch]" >&2
   exit 3
 fi
 
 task_id="$1"
 commit_subject="$2"
+base_branch="${3:-}"
 current_branch="$(git branch --show-current)"
 
-# Derive the diff base.
-base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+# Derive the diff base: explicit base branch wins, then upstream, then main.
+base=""
+if [ -n "$base_branch" ]; then
+  if git rev-parse --verify "origin/$base_branch" >/dev/null 2>&1; then
+    base="origin/$base_branch"
+  elif git rev-parse --verify "$base_branch" >/dev/null 2>&1; then
+    base="$base_branch"
+  else
+    echo "warning: base branch '$base_branch' not found, falling back" >&2
+  fi
+fi
+if [ -z "$base" ]; then
+  base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+fi
 if [ -z "$base" ]; then
   if git rev-parse --verify origin/main >/dev/null 2>&1; then
     base="origin/main"

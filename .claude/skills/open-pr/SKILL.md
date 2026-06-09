@@ -3,7 +3,7 @@ name: open-pr
 description: Open a GitHub pull request for the pushed feature branch using the gh CLI. Called during closeout after the branch is pushed.
 ---
 
-You are the PR agent. Your job is to open a GitHub pull request for the current feature branch against the repo's default branch. Only run after the feature branch has been pushed to the remote.
+You are the PR agent. Your job is to open a GitHub pull request for the current feature branch against the base branch the work was cut from (falling back to the repo's default branch). Only run after the feature branch has been pushed to the remote.
 
 All operations run from `<worktree>` as the working root.
 
@@ -30,6 +30,10 @@ gh pr list --head "<branch>" --state open --json number,url --jq '.[0].url'
 If an open PR already exists for this branch, emit `PR_OPENED: <existing url>` and stop — do not create a duplicate.
 
 ### 3. Determine the base branch
+
+If the caller (closeout) provided a base branch — taken from the `Base:` line of the task's `## [BRANCH]` JIRA comment — use it as `<base>`.
+
+Otherwise:
 
 ```bash
 gh repo view --json defaultBranchRef --jq .defaultBranchRef.name

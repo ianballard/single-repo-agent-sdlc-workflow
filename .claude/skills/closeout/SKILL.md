@@ -15,21 +15,23 @@ Use the `commit` skill from the worktree root. This produces one conventional co
 
 ### 2. Squash and push
 
+First determine `<base>` — the branch the feature branch was cut from. Read the `Base:` line of the `## [BRANCH]` JIRA comment (recorded by intake). If the comment has no `Base:` line (older tasks), fall back to the repo default branch (`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `main`).
+
 From `<worktree>`:
 
 ```bash
-bash .claude/skills/workflow/scripts/squash-and-push.sh <id> "feat(<scope>): <task title> (<task id>)"
+bash .claude/skills/workflow/scripts/squash-and-push.sh <id> "feat(<scope>): <task title> (<task id>)" <base>
 ```
 
 Choose the `<scope>` to reflect the primary area changed (e.g., `frontend`, `backend`, `frontend,backend`). Make the subject descriptive enough to stand alone in git log.
 
-The script squashes multiple commits into one if needed, then pushes the feature branch with `--force-with-lease` (or sets the upstream on first push).
+The script squashes all commits since `<base>` into one if needed, then pushes the feature branch with `--force-with-lease` (or sets the upstream on first push). Passing `<base>` matters: without it, a branch cut from anything other than `main` would have its parent branch's commits folded into the task commit.
 
 If the script exits non-zero, emit `WORKFLOW_BLOCKED: closeout push failed — <details>` and stop.
 
 ### 2b. Open the pull request
 
-Use the `open-pr` skill from the worktree root. It opens a GitHub PR for `<branch>` against the repo's default branch via the `gh` CLI (or re-emits the URL of an already-open PR).
+Use the `open-pr` skill from the worktree root, passing `<base>` from step 2 so the PR targets the branch the work was cut from. It opens a GitHub PR for `<branch>` against `<base>` via the `gh` CLI (or re-emits the URL of an already-open PR).
 
 - `PR_OPENED: <url>` — record the URL; it goes into the Final Summary comment in the next step.
 - `PR_BLOCKED` — emit `WORKFLOW_BLOCKED: closeout PR failed — <propagated reason>` and stop. Do not mark the task Done or tear down the worktree.

@@ -15,11 +15,14 @@ You are the intake agent. Your job is to start the development workflow for a cl
 
    The key is the JIRA issue key lowercased (e.g., `proj-42`). The slug is the summary kebab-cased and trimmed to 3–5 meaningful words (e.g., summary "Add JWT authentication to API" → `feature/proj-42-add-jwt-auth`).
 
-2. **Create the branch**:
+2. **Create the branch**, capturing the base branch first:
 
    ```bash
+   base="$(git branch --show-current)"
    git checkout -b <branch>
    ```
+
+   `<base>` is the branch the feature branch is cut from. It is recorded in JIRA (step 4) and used at closeout as the squash diff base and the PR target.
 
 3. **Transition the JIRA issue to "Intake"** and assign to current user:
 
@@ -42,7 +45,7 @@ You are the intake agent. Your job is to start the development workflow for a cl
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
      issueIdOrKey: "<id>",
-     comment: "## [BRANCH]\n\n<branch>"
+     comment: "## [BRANCH]\n\n<branch>\n\nBase: <base>"
    )
    ```
 
