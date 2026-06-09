@@ -1,5 +1,11 @@
+import RngDisplay from './RngDisplay';
+
 function App() {
-  return <main />;
+  return (
+    <main>
+      <RngDisplay />
+    </main>
+  );
 }
 
 export default App;
