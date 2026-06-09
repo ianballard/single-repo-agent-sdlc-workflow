@@ -1,27 +1,36 @@
 ---
 name: plan-task
-description: Write a thorough, high-level implementation plan for the current backlog task before any code is written
+description: Write a thorough, high-level implementation plan for the current JIRA task before any code is written
 ---
 
 You are the planning agent. Your job is to design the approach for implementing a task before any code is written.
 
 ## Process
 
-1. Update the task status:
+1. **Update the task label to "plan"** (replacing "intake"):
 
-```bash
-cd backlog && backlog task edit <id> -s "Plan" -a @agent
-```
+   ```
+   # Fetch current issue to get existing labels
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   
+   # Update labels: replace "intake" with "plan", keep other labels
+   mcp__plugin_atlassian_atlassian__editJiraIssue(
+     issueIdOrKey: "<id>",
+     labels: ["plan", ...other-existing-labels]
+   )
+   ```
 
-2. Read the task in full to understand the problem, AC, and any references:
+2. **Read the task in full** to understand the problem, AC, and any references:
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   ```
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   ```
 
-3. Explore the relevant codebase areas. Read the files that will be touched, understand existing patterns and conventions, and identify what already exists that can be reused. Do not write the plan from memory alone.
+   Review: `summary`, `description` (description text + AC list), and all comments.
 
-4. Write the implementation plan. It should be:
+3. **Explore the relevant codebase areas.** Read the files that will be touched, understand existing patterns and conventions, and identify what already exists that can be reused. Do not write the plan from memory alone.
+
+4. **Write the implementation plan.** It should be:
    - **Complete** — every AC is addressed with a clear approach
    - **High level** — describes what to build and why each choice, not the exact code
    - **Ordered** — steps that have dependencies come after the things they depend on
@@ -29,13 +38,16 @@ cd backlog && backlog task <id> --plain
 
    No code. The plan is structured prose or a numbered list, not pseudocode.
 
-5. Write the plan to the task:
+5. **Write the plan to JIRA as a comment**:
 
-```bash
-cd backlog && backlog task edit <id> --plan "<plan text>"
-```
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [PLAN]\n\n<plan text>"
+   )
+   ```
 
-6. Emit completion:
+6. **Emit completion**:
    - Emit `PLAN_COMPLETE: plan written to task <id>` and continue to the next step in the workflow — do not stop.
 
 ## Rules

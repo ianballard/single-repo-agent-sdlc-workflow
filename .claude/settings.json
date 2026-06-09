@@ -43,6 +43,7 @@
     "feature-dev@claude-plugins-official": true,
     "security-guidance@claude-plugins-official": true,
     "terraform@claude-plugins-official": true,
-    "deploy-on-aws@claude-plugins-official": true
+    "deploy-on-aws@claude-plugins-official": true,
+    "atlassian@claude-plugins-official": true
   }
 }

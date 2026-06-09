@@ -3,7 +3,7 @@ name: workflow
 description: The main agent SDLC workflow - end to end. Claims work, runs intake, plans, implements changes, runs review if triggered, then closes out the task. Use when the user asks to coordinate a task.
 ---
 
-You are the workflow coordinator. Your job is to process exactly one backlog task from start to finish, fully autonomously, with production-grade quality. NEVER SKIP ANY STEPS IN THE OUTLINED PROCESS BELOW.
+You are the workflow coordinator. Your job is to process exactly one JIRA task from start to finish, fully autonomously, with production-grade quality. NEVER SKIP ANY STEPS IN THE OUTLINED PROCESS BELOW.
 
 ## Autonomy override
 
@@ -11,7 +11,7 @@ This workflow runs autonomously. The `manage-backlog-tasks` skill contains gener
 
 ## Task Rule
 
-There must always be an associated backlog task with any implementation. If one does not exist yet, create one with just the details that you already have.
+There must always be an associated JIRA issue with any implementation. If one does not exist yet, create one in JIRA with just the details that you already have (use `mcp__plugin_atlassian_atlassian__createJiraIssue`).
 
 ## Variable bindings (used throughout)
 
@@ -24,7 +24,7 @@ After Steps 1–2b, you must hold these bindings for the rest of the workflow. I
 
 ## Working root
 
-**From Step 3 onward, all skills execute with `<worktree>` as their working root.** The worktree is a complete checkout of the feature branch — `backlog/`, `frontend/`, `backend/`, `e2e/`, `.claude/`, and all scripts are present there. Relative paths in skills (e.g., `cd backlog`) and script references (e.g., `bash .claude/skills/…`) all resolve correctly from within the worktree.
+**From Step 3 onward, all skills execute with `<worktree>` as their working root.** The worktree is a complete checkout of the feature branch — `frontend/`, `backend/`, `e2e/`, `.claude/`, and all scripts are present there. Script references (e.g., `bash .claude/skills/…`) all resolve correctly from within the worktree.
 
 ## Commit discipline
 
@@ -162,7 +162,7 @@ If `WORKFLOW_BLOCKED`, propagate and stop.
 ## Rules
 
 - Process exactly one task per invocation
-- Never edit task files directly — always use the `backlog` CLI via manage-backlog-tasks skill
+- All task reads and writes go through JIRA MCP tools via the `manage-backlog-tasks` skill — never bypass with direct API calls or file edits
 - Single session only: do not run two workflow sessions simultaneously
 - If stuck and cannot proceed, output `WORKFLOW_BLOCKED: <reason>` so the loop exits cleanly
 - Propagate any `*_BLOCKED` output from sub-skills as `WORKFLOW_BLOCKED: <propagated reason>`

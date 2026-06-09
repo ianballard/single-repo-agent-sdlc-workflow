@@ -7,17 +7,33 @@ You are the code review gate agent. This skill is only invoked when the user has
 
 ## Process
 
-1. Update the task status to signal it is awaiting human code review:
+1. **Update the JIRA issue label to signal it is awaiting human code review:**
 
-```bash
-cd backlog && backlog task edit <id> -s "Human Code Review" -a @human
-```
+   ```
+   # Fetch current labels to preserve non-workflow ones
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   
+   # Update labels: replace workflow phase label with "human-code-review"
+   mcp__plugin_atlassian_atlassian__editJiraIssue(
+     issueIdOrKey: "<id>",
+     labels: ["human-code-review", ...other-existing-labels]
+   )
+   ```
 
-2. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+2. **Add a comment indicating human code review is needed:**
 
-3. Emit `WORKFLOW_BLOCKED: human code review required for task <id> — implementation must be reviewed before closeout` and stop.
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [NOTES]\n\nAwaiting human code review. Implementation must be reviewed before closeout."
+   )
+   ```
 
-The human reviews the code (the branch is pushed so the diff is visible). If changes are needed, they can be made directly and the workflow re-invoked to resume from Step 12 (Merge Guard). If no changes are needed, resume from Step 13 (Closeout).
+3. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+
+4. Emit `WORKFLOW_BLOCKED: human code review required for task <id> — implementation must be reviewed before closeout` and stop.
+
+The human reviews the code (the branch is pushed so the diff is visible in GitHub/GitLab). If changes are needed, they can be made directly and the workflow re-invoked to resume from Step 12 (Merge Guard). If no changes are needed, resume from Step 13 (Closeout).
 
 ## Rules
 

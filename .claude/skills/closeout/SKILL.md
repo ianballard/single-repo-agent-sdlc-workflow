@@ -1,9 +1,9 @@
 ---
 name: closeout
-description: Commit all pending changes, squash and push the feature branch, mark the task Done, and tear down the worktree
+description: Commit all pending changes, squash and push the feature branch, mark the JIRA task Done, and tear down the worktree
 ---
 
-You are the closeout agent. Your job is to finalize the task: produce one clean commit, push the feature branch, mark the backlog task Done, and clean up the worktree. Only run after the merge guard (Step 12) has passed.
+You are the closeout agent. Your job is to finalize the task: produce one clean commit, push the feature branch, mark the JIRA issue Done, and clean up the worktree. Only run after the merge guard (Step 12) has passed.
 
 All operations through step 4 run from `<worktree>` as the working root. Step 5 (worktree teardown) switches to the main repo.
 
@@ -11,7 +11,7 @@ All operations through step 4 run from `<worktree>` as the working root. Step 5 
 
 ### 1. Commit all pending changes
 
-Use the `commit` skill from the worktree root. This produces one conventional commit to the feature branch containing every change accumulated since intake: code, tests, backlog updates, plan, notes, AC checks, and review notes.
+Use the `commit` skill from the worktree root. This produces one conventional commit to the feature branch containing every change accumulated since intake: code, tests, and any local file updates.
 
 ### 2. Squash and push
 
@@ -27,20 +27,25 @@ The script squashes multiple commits into one if needed, then pushes the feature
 
 If the script exits non-zero, emit `WORKFLOW_BLOCKED: closeout push failed — <details>` and stop.
 
-### 3. Mark the task done
+### 3. Add the Final Summary to JIRA
 
-From `<worktree>`:
-
-```bash
-cd backlog && backlog task edit <id> -s Done
+```
+mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+  issueIdOrKey: "<id>",
+  comment: "## [FINAL SUMMARY]\n\n<PR-description-style summary of what was implemented>"
+)
 ```
 
-### 4. Commit and push the final status change
+Write it like a reviewer will see it: what changed, why, user impact, tests run, and any risks or follow-ups.
 
-Use the `commit` skill once more for the Done status update, then push from `<worktree>`:
+### 4. Mark the task Done
 
-```bash
-git push
+```
+# Get available transitions
+mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+
+# Transition to Done (pick the matching transition id)
+mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<done-id>")
 ```
 
 ### 5. Tear down the worktree
@@ -62,6 +67,6 @@ Emit `TASK_COMPLETE: <id> — <title>`
 ## Rules
 
 - Never push before committing — all working tree changes must be committed first
-- The task must be marked Done before tearing down the worktree
+- The task must be marked Done in JIRA before tearing down the worktree
 - Worktree teardown must run from the main repo, not from inside the worktree
 - If any step fails before teardown, emit `WORKFLOW_BLOCKED: closeout failed — <details>` and stop — do not tear down the worktree so in-progress work is preserved for debugging

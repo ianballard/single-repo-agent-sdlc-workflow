@@ -7,22 +7,23 @@ You are the audit agent. Your job is to verify that all required workflow steps 
 
 ## Process
 
-1. Review the task history and notes to verify each step was completed:
+1. **Review the task history** to verify each step was completed:
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   ```
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   ```
 
-2. Verify the following checklist. Expected status progression: `Intake → Plan → Code → AI Code Review → Done`, all assigned to `@agent` unless an optional human gate was enabled.
+   Examine: current status, labels, assignee, description (AC checkboxes), and all comments (look for `## [BRANCH]`, `## [PLAN]`, `## [NOTES]`, `## [MODIFIED FILES]`, `## [FINAL SUMMARY]` headers).
+
+2. **Verify the following checklist.** Expected label progression: `intake → plan → code → ai-review`, status: `In Progress` (then `Done` at closeout).
 
    **Step 1: Work Claimed**
-   - [ ] Task was claimed from the backlog
    - [ ] Task ID and title appear in the workflow context
 
    **Step 2: Intake** (`intake` skill)
-   - [ ] Task status was updated to "Intake" and assigned to @agent
-   - [ ] Task `--ref` was set to the git branch name
-   - [ ] Git branch was created following gitflow conventions (e.g., `feature/<id>-<slug>`)
+   - [ ] Task status is "In Progress" and has `intake` or later label
+   - [ ] A `## [BRANCH]` comment exists with the git branch name
+   - [ ] Git branch was created following gitflow conventions (e.g., `feature/<key>-<slug>`)
    - [ ] `INTAKE_COMPLETE` was emitted
 
    **Step 2b: Worktree Setup** (`setup-worktree` skill)
@@ -34,21 +35,21 @@ cd backlog && backlog task <id> --plain
    - [ ] `TASK_ASSESSMENT_PASSED` was emitted (or workflow was blocked for refinement)
 
    **Step 4: Planning** (`plan-task` skill)
-   - [ ] Task status was updated to "Plan" and assigned to @agent
-   - [ ] Implementation plan was written to the task via `--plan`
+   - [ ] Task label includes `plan` or later phase
+   - [ ] A `## [PLAN]` comment exists with the implementation plan
    - [ ] `PLAN_COMPLETE` was emitted
 
    **Step 4a: AI Hostile Plan Review** (`hostile-plan-review` skill)
-   - [ ] Hostile plan review was run (look for `HOSTILE PLAN REVIEW` in task notes)
+   - [ ] Hostile plan review was run (look for `HOSTILE PLAN REVIEW` in comments or transcript)
    - [ ] `HOSTILE_REVIEW_PASSED` was emitted (or blocking issues were resolved and plan revised)
 
    **Step 5: Implementation** (`implement` skill)
-   - [ ] Task status was updated to "Code" and assigned to @agent
+   - [ ] Task label includes `code` or later phase
    - [ ] Changes were implemented according to the plan
    - [ ] `IMPLEMENTATION_COMPLETE` was emitted
 
    **Step 6: AC Verification** (`verify-ac` skill)
-   - [ ] All ACs are checked (no unchecked `- [ ]` items remain)
+   - [ ] All ACs in the description are checked (`- [x] #N`) with no unchecked `- [ ]` items remaining
    - [ ] `AC_VERIFIED` was emitted
 
    **Step 7: Unit Tests** (`unit-tests` skill)
@@ -59,26 +60,26 @@ cd backlog && backlog task <id> --plain
    - [ ] `E2E_TESTS_PASSED` or `E2E_TESTS_SKIPPED` (with documented reason) was emitted
 
    **Step 9: Implementation Notes** (`implementation-notes` skill)
-   - [ ] Implementation notes were appended to the task
+   - [ ] A `## [NOTES]` comment exists with implementation details
+   - [ ] A `## [MODIFIED FILES]` comment exists
    - [ ] `IMPLEMENTATION_NOTES_COMPLETE` was emitted
 
    **Step 10: Code Review** (`code-review` skill)
-   - [ ] Task status was updated to "AI Code Review" and assigned to @agent
+   - [ ] Task label includes `ai-review`
    - [ ] `CODE_REVIEW_APPROVED` was emitted (or all blocking issues resolved and re-reviewed)
 
-
-3. For each incomplete step:
+3. **For each incomplete step**:
    - Document which step was missed
    - Document what needs to be done
 
-4. Emit results:
-   - If all steps completed: Emit `AUDIT_PASSED: all workflow steps completed` and continue on to the next step in the workflow - do not stop.
+4. **Emit results**:
+   - If all steps completed: Emit `AUDIT_PASSED: all workflow steps completed` and continue on to the next step in the workflow — do not stop.
    - If steps are missing: Emit `AUDIT_FAILED: missing steps — <list of missing steps>` and return the list
 
 ## Rules
 
 - All steps must be verified as complete
-- Check the task history and notes for evidence of each step
-- If a step was intentionally skipped, there should be a documented reason
+- Check the JIRA issue comments and fields for evidence of each step
+- If a step was intentionally skipped, there should be a documented reason in the comments
 - Do not pass the audit if any critical steps are missing
 - If the audit fails, provide clear guidance on what needs to be completed

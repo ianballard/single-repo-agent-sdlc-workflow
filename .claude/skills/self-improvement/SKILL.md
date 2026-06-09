@@ -17,28 +17,33 @@ Do not manufacture recommendations. If the workflow ran smoothly and nothing sta
 
 ## Process
 
-1. Read the completed task to review what happened during execution:
+1. **Read the completed task** to review what happened during execution:
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   ```
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   ```
 
-2. Reflect on the execution by reviewing the task notes and status history:
+   Review the task description, labels, and all comments (plan, notes, code review findings, etc.).
+
+2. **Reflect on the execution** by reviewing the task notes and status history:
    - Were there unexpected retries or loops?
    - Did any step produce output that a later step had to work around?
    - Was any skill missing context it needed that another skill already had?
    - Did the ordering of steps cause unnecessary rework?
    - Did any skill's instructions turn out to be ambiguous or incomplete?
 
-3. If a meaningful recommendation is identified:
-   - Write it to the task:
-   ```bash
-   cd backlog && backlog task edit <id> --append-notes "SELF-IMPROVEMENT: <specific recommendation>"
+3. **If a meaningful recommendation is identified:**
+   - Write it to the task as a JIRA comment:
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [NOTES]\n\nSELF-IMPROVEMENT: <specific recommendation>"
+   )
    ```
    - Use the `commit` skill to commit all pending changes (exit path — no later closeout commit will run).
    - Emit `SELF_IMPROVEMENT_REVIEW_REQUIRED: task <id> — <recommendation summary>` and stop. A human must approve the recommendation before the workflow continues to closeout.
 
-4. If no meaningful recommendation:
+4. **If no meaningful recommendation:**
    - Emit nothing and continue to the next step in the workflow — do not stop.
 
 ## Rules

@@ -22,20 +22,22 @@ fi
 
 ## Process
 
-1. Review the changes made on the current branch:
+1. **Review the changes made on the current branch**:
 
-```bash
-git diff "$base"...HEAD --stat
-git log "$base"..HEAD --oneline
-```
+   ```bash
+   git diff "$base"...HEAD --stat
+   git log "$base"..HEAD --oneline
+   ```
 
-2. Review the task details to understand the original requirements:
+2. **Review the task details** to understand the original requirements:
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   ```
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   ```
 
-3. Write implementation notes that include:
+   Review the description (AC list) and existing comments (plan, any prior notes).
+
+3. **Write implementation notes** that include:
 
    **What was implemented:**
    - Summary of the changes made
@@ -62,14 +64,26 @@ cd backlog && backlog task <id> --plain
    - Potential improvements or optimizations
    - Related work that may be needed
 
-4. Append the implementation notes to the task:
+4. **Append the implementation notes as a JIRA comment**:
 
-```bash
-cd backlog && backlog task edit <id> --append-notes "<implementation notes>"
-```
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [NOTES]\n\n<implementation notes>"
+   )
+   ```
 
-5. Emit completion:
-   - Emit `IMPLEMENTATION_NOTES_COMPLETE: notes added to task <id>` and continue on to the next step in the workflow - do not stop.
+5. **Also record the modified files** (used by merge-guard):
+
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [MODIFIED FILES]\n\n<list of files from git diff --stat>"
+   )
+   ```
+
+6. **Emit completion**:
+   - Emit `IMPLEMENTATION_NOTES_COMPLETE: notes added to task <id>` and continue on to the next step in the workflow — do not stop.
 
 ## Rules
 

@@ -7,17 +7,33 @@ You are the intake gate agent. This skill is only invoked when the user has expl
 
 ## Process
 
-1. Update the task status to signal it is awaiting human review:
+1. **Update the JIRA issue to signal it is awaiting human review:**
 
-```bash
-cd backlog && backlog task edit <id> -s "Intake Review" -a @human
-```
+   ```
+   # Get available transitions (look for one closest to "In Review" or keep "In Progress")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+   
+   # Update the label to "intake-review"
+   mcp__plugin_atlassian_atlassian__editJiraIssue(
+     issueIdOrKey: "<id>",
+     labels: ["intake-review"]
+   )
+   ```
 
-2. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+2. **Add a comment indicating human review is needed:**
 
-3. Emit `WORKFLOW_BLOCKED: intake review required for task <id> — task definition must be approved before planning begins` and stop.
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [NOTES]\n\nAwaiting human intake review. Task definition must be approved before planning begins."
+   )
+   ```
 
-The human reviews the task definition offline. If changes are needed, they update the task directly. When ready, they re-invoke the workflow to resume from Step 4 (Plan the task).
+3. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+
+4. Emit `WORKFLOW_BLOCKED: intake review required for task <id> — task definition must be approved before planning begins` and stop.
+
+The human reviews the task definition in JIRA. If changes are needed, they update the issue directly. When ready, they re-invoke the workflow to resume from Step 4 (Plan the task).
 
 ## Rules
 

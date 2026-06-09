@@ -22,25 +22,34 @@ fi
 
 ## Process
 
-1. Update the task status to signal the review is in progress:
+1. **Update the task label to "ai-review"** (replacing "code"):
 
-```bash
-cd backlog && backlog task edit <id> -s "AI Code Review" -a @agent
-```
+   ```
+   # Fetch current issue to get existing labels
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   
+   # Update labels: replace "code" with "ai-review", keep other labels
+   mcp__plugin_atlassian_atlassian__editJiraIssue(
+     issueIdOrKey: "<id>",
+     labels: ["ai-review", ...other-existing-labels]
+   )
+   ```
 
-2. Review all changes on the current branch:
+2. **Review all changes on the current branch**:
 
-```bash
-git diff "$base"...HEAD
-```
+   ```bash
+   git diff "$base"...HEAD
+   ```
 
-3. Review the task details to understand the requirements:
+3. **Review the task details** to understand the requirements:
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   ```
+   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   ```
 
-4. Perform a comprehensive code review covering:
+   Review the description (AC list) and the `## [PLAN]` comment.
+
+4. **Perform a comprehensive code review** covering:
 
    **Code Quality:**
    - Code clarity and readability
@@ -67,33 +76,30 @@ cd backlog && backlog task <id> --plain
    - Are there any scope creep or unnecessary additions?
    - Are there any missing edge cases?
 
-5. Categorize findings:
+5. **Categorize findings:**
    - **Critical:** Must be fixed before merging (security, bugs, requirement gaps)
    - **Major:** Should be fixed (performance, maintainability issues)
    - **Minor:** Nice to have (style preferences, minor optimizations)
 
-6. If critical or major issues are found:
-   - Document each issue with:
-     - File path and line number
-     - Description of the issue
-     - Suggested fix
-     - Category (critical/major/minor)
-   - Append review comments to the task. The Backlog CLI does **not** convert `\n` inside double quotes — pass real newlines or repeat `--append-notes`:
-   ```bash
-   cd backlog && backlog task edit <id> \
-     --append-notes "CODE REVIEW FINDINGS:" \
-     --append-notes "- <file>:<line> [critical] <description> — fix: <suggested fix>" \
-     --append-notes "- <file>:<line> [major] <description> — fix: <suggested fix>"
+6. **If critical or major issues are found:**
+   - Document each issue and add as a JIRA comment:
    ```
-   - Output `CODE_REVIEW_BLOCKED: <number> critical/major issues found` and stop
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [NOTES]\n\nCODE REVIEW FINDINGS:\n- <file>:<line> [critical] <description> — fix: <suggested fix>\n- <file>:<line> [major] <description> — fix: <suggested fix>"
+   )
+   ```
+   - Output `CODE_REVIEW_BLOCKED: <number> critical/major issues found` and stop.
 
-7. If only minor issues or no issues are found:
-   - Document any minor suggestions
-   - Append review summary to the task:
-   ```bash
-   cd backlog && backlog task edit <id> --append-notes "CODE REVIEW: Approved with <number> minor suggestions"
+7. **If only minor issues or no issues are found:**
+   - Add review summary as a JIRA comment:
    ```
-   - Emit `CODE_REVIEW_APPROVED: <summary>` and continue on to the next step in the workflow - do not stop.
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     issueIdOrKey: "<id>",
+     comment: "## [NOTES]\n\nCODE REVIEW: Approved with <number> minor suggestions"
+   )
+   ```
+   - Emit `CODE_REVIEW_APPROVED: <summary>` and continue on to the next step in the workflow — do not stop.
 
 ## Review Checklist
 
