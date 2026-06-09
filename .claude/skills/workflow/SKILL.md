@@ -153,7 +153,7 @@ If `WORKFLOW_BLOCKED`, propagate and stop.
 
 ## Step 13: Closeout
 
-Use the `closeout` skill.
+Use the `closeout` skill. As part of closeout (after the branch is pushed), it invokes the `open-pr` skill to open a GitHub pull request for `<branch>` and records the PR URL in the Final Summary comment on the JIRA issue.
 
 If `WORKFLOW_BLOCKED`, propagate and stop.
 

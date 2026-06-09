@@ -39,13 +39,14 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **code-review-gate** - Optional human code review gate (Step 10b)
 - **audit-followed-workflow-steps** - Verifies all workflow steps completed (reads JIRA comments/labels)
 - **self-improvement** - Reflects on execution and emits process improvement recommendations
-- **merge-guard** - Verifies branch changes are within the task's declared scope (reads from JIRA)
-- **closeout** - Commits, squashes, pushes, marks the JIRA task Done, and tears down worktree
+- **merge-guard** - Verifies branch changes are within the task's declared scope
+- **open-pr** - Opens a GitHub pull request for the pushed feature branch via the `gh` CLI (invoked by closeout)
+- **closeout** - Commits, squashes, pushes, opens the PR, and marks the task Done
 - **commit** - Creates conventional commit messages
 - **manage-backlog-tasks** - Documents all JIRA MCP operations used by the workflow
 
 The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL.md`):
-1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Optional human plan review → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, mark done, tear down worktree)
+1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Optional human plan review → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, mark done, tear down worktree)
 
 **Key workflow behaviors:**
 - All task reads and writes use JIRA MCP tools via the `manage-backlog-tasks` skill
@@ -62,3 +63,17 @@ The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL
 When the user says "coordinate a task" or wants full SDLC automation, invoke the `workflow` skill. It will handle the entire lifecycle autonomously. The workflow operates on one task at a time and requires a feature branch (blocks if on main/master/develop).
 
 For manual operations, use individual skills like `unit-tests`, `e2e-tests`, `commit`, etc. or interact directly with JIRA via the MCP tools.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in JIRA via the Atlassian MCP tools (issue keys like `KAN-42`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage roles map to JIRA statuses, not labels (`Triage`, `Needs Info`, `To Do`, `Ready for Human`, `Done`/Won't Do). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
