@@ -7,17 +7,11 @@ You are the planning agent. Your job is to design the approach for implementing 
 
 ## Process
 
-1. **Update the task label to "plan"** (replacing "intake"):
+1. **Transition the task to "Plan" status**:
 
    ```
-   # Fetch current issue to get existing labels
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
-   
-   # Update labels: replace "intake" with "plan", keep other labels
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     issueIdOrKey: "<id>",
-     labels: ["plan", ...other-existing-labels]
-   )
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<plan-id>")
    ```
 
 2. **Read the task in full** to understand the problem, AC, and any references:

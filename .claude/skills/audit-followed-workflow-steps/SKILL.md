@@ -15,13 +15,13 @@ You are the audit agent. Your job is to verify that all required workflow steps 
 
    Examine: current status, labels, assignee, description (AC checkboxes), and all comments (look for `## [BRANCH]`, `## [PLAN]`, `## [NOTES]`, `## [MODIFIED FILES]`, `## [FINAL SUMMARY]` headers).
 
-2. **Verify the following checklist.** Expected label progression: `intake → plan → code → ai-review`, status: `In Progress` (then `Done` at closeout).
+2. **Verify the following checklist.** Expected status progression: `To Do → Intake → Plan → Code → AI Code Review → Done`.
 
    **Step 1: Work Claimed**
    - [ ] Task ID and title appear in the workflow context
 
    **Step 2: Intake** (`intake` skill)
-   - [ ] Task status is "In Progress" and has `intake` or later label
+   - [ ] Task status is "Intake" or later
    - [ ] A `## [BRANCH]` comment exists with the git branch name
    - [ ] Git branch was created following gitflow conventions (e.g., `feature/<key>-<slug>`)
    - [ ] `INTAKE_COMPLETE` was emitted
@@ -35,16 +35,16 @@ You are the audit agent. Your job is to verify that all required workflow steps 
    - [ ] `TASK_ASSESSMENT_PASSED` was emitted (or workflow was blocked for refinement)
 
    **Step 4: Planning** (`plan-task` skill)
-   - [ ] Task label includes `plan` or later phase
+   - [ ] Task status is "Plan" or later
    - [ ] A `## [PLAN]` comment exists with the implementation plan
    - [ ] `PLAN_COMPLETE` was emitted
 
    **Step 4a: AI Hostile Plan Review** (`hostile-plan-review` skill)
-   - [ ] Hostile plan review was run (look for `HOSTILE PLAN REVIEW` in comments or transcript)
+   - [ ] A `HOSTILE PLAN REVIEW` comment exists in the JIRA issue
    - [ ] `HOSTILE_REVIEW_PASSED` was emitted (or blocking issues were resolved and plan revised)
 
    **Step 5: Implementation** (`implement` skill)
-   - [ ] Task label includes `code` or later phase
+   - [ ] Task status is "Code" or later
    - [ ] Changes were implemented according to the plan
    - [ ] `IMPLEMENTATION_COMPLETE` was emitted
 
@@ -65,7 +65,7 @@ You are the audit agent. Your job is to verify that all required workflow steps 
    - [ ] `IMPLEMENTATION_NOTES_COMPLETE` was emitted
 
    **Step 10: Code Review** (`code-review` skill)
-   - [ ] Task label includes `ai-review`
+   - [ ] Task status is "AI Code Review" or later
    - [ ] `CODE_REVIEW_APPROVED` was emitted (or all blocking issues resolved and re-reviewed)
 
 3. **For each incomplete step**:

@@ -7,17 +7,11 @@ You are the implementation agent. Your job is to write production-grade code tha
 
 ## Process
 
-1. **Update the task label to "code"** (replacing "plan"):
+1. **Transition the task to "Code" status**:
 
    ```
-   # Fetch current issue to get existing labels
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
-   
-   # Update labels: replace "plan" with "code", keep other labels
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     issueIdOrKey: "<id>",
-     labels: ["code", ...other-existing-labels]
-   )
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<code-id>")
    ```
 
 2. **Read the task to review the plan and acceptance criteria**:

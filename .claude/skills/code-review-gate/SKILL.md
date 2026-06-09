@@ -7,20 +7,14 @@ You are the code review gate agent. This skill is only invoked when the user has
 
 ## Process
 
-1. **Update the JIRA issue label to signal it is awaiting human code review:**
+1. **Transition the JIRA issue to "Human Code Review" status**:
 
    ```
-   # Fetch current labels to preserve non-workflow ones
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
-   
-   # Update labels: replace workflow phase label with "human-code-review"
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     issueIdOrKey: "<id>",
-     labels: ["human-code-review", ...other-existing-labels]
-   )
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<human-code-review-id>")
    ```
 
-2. **Add a comment indicating human code review is needed:**
+2. **Add a comment indicating human code review is needed**:
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(

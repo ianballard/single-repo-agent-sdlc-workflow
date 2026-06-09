@@ -22,17 +22,11 @@ fi
 
 ## Process
 
-1. **Update the task label to "ai-review"** (replacing "code"):
+1. **Transition the task to "AI Code Review" status**:
 
    ```
-   # Fetch current issue to get existing labels
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
-   
-   # Update labels: replace "code" with "ai-review", keep other labels
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     issueIdOrKey: "<id>",
-     labels: ["ai-review", ...other-existing-labels]
-   )
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<ai-code-review-id>")
    ```
 
 2. **Review all changes on the current branch**:

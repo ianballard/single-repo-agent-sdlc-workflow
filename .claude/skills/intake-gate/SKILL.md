@@ -7,20 +7,14 @@ You are the intake gate agent. This skill is only invoked when the user has expl
 
 ## Process
 
-1. **Update the JIRA issue to signal it is awaiting human review:**
+1. **Transition the JIRA issue to "Intake Review" status**:
 
    ```
-   # Get available transitions (look for one closest to "In Review" or keep "In Progress")
    mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
-   
-   # Update the label to "intake-review"
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     issueIdOrKey: "<id>",
-     labels: ["intake-review"]
-   )
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<intake-review-id>")
    ```
 
-2. **Add a comment indicating human review is needed:**
+2. **Add a comment indicating human review is needed**:
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(

@@ -50,8 +50,7 @@ The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL
 **Key workflow behaviors:**
 - All task reads and writes use JIRA MCP tools via the `manage-backlog-tasks` skill
 - JIRA issue key is the `<id>` throughout the workflow (e.g., `PROJ-42`)
-- Workflow phase is tracked via JIRA labels: `intake → plan → code → ai-review`
-- JIRA status transitions: To Do → In Progress → Done
+- JIRA status lifecycle: `To Do → Intake → Plan → Code → AI Code Review → Done` (optional gates: `Intake Review`, `Plan Review`, `Human Code Review`)
 - Uses gitflow branch naming: `feature/<issue-key>-description`, `fix/<issue-key>-description`, etc.
 - Commits at closeout only (not between steps) — all changes accumulate in worktree
 - Merge guard (Step 12) runs **before** marking the task Done — compares `<upstream>..HEAD` against the `## [MODIFIED FILES]` JIRA comment to detect scope creep

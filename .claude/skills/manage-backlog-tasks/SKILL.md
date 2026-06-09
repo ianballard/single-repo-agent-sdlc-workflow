@@ -26,11 +26,10 @@ JIRA fields used by this workflow:
 | Title | `summary` | One-liner |
 | Description | `description` | Markdown — includes task description + AC list |
 | Acceptance Criteria | In `description` | Format: `- [ ] #N criterion` / `- [x] #N criterion` |
-| Status | `status` | Changed via transitions |
-| Workflow Phase | Label | `intake`, `plan`, `code`, `ai-review` added to labels per phase |
+| Status | `status` | Changed via transitions — see Status Reference below |
 | Assignee | `assignee` | Set to current user or service account |
 | Priority | `priority` | `Highest`, `High`, `Medium`, `Low`, `Lowest` |
-| Labels | `labels` | User labels + workflow phase labels |
+| Labels | `labels` | User-defined labels only (no workflow phase labels needed) |
 | Implementation Plan | Comment | Header: `## [PLAN]` |
 | Implementation Notes | Comments | Header: `## [NOTES]` (append; multiple allowed) |
 | Final Summary | Comment | Header: `## [FINAL SUMMARY]` |
@@ -65,14 +64,13 @@ Common JQL patterns:
 # All open issues
 project = "PROJ" AND status != Done ORDER BY priority ASC, created ASC
 
-# By status
+# By status (use exact status names from the board)
 project = "PROJ" AND status = "To Do"
+project = "PROJ" AND status = "Code"
+project = "PROJ" AND status = "AI Code Review"
 
-# By label (workflow phase)
-project = "PROJ" AND labels = "code"
-
-# In Progress
-project = "PROJ" AND status = "In Progress"
+# Issues currently being worked on (any in-flight status)
+project = "PROJ" AND status in ("Intake", "Plan", "Code", "AI Code Review")
 ```
 
 ### Create a Task
@@ -104,7 +102,7 @@ mcp__plugin_atlassian_atlassian__editJiraIssue(
 
 ### Change Status (Transitions)
 
-Always discover transitions before transitioning — each project has its own workflow:
+Always discover transitions before transitioning — the available transition IDs depend on the current status:
 
 ```
 1. mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
@@ -116,17 +114,7 @@ Always discover transitions before transitioning — each project has its own wo
    )
 ```
 
-**Status mapping** — pick the closest available transition:
-
-| Workflow Phase | Target JIRA Status | Label to Add |
-|---|---|---|
-| Intake | In Progress | `intake` |
-| Plan | In Progress | `plan` (replace `intake`) |
-| Code | In Progress | `code` (replace `plan`) |
-| AI Code Review | In Progress or In Review | `ai-review` (replace `code`) |
-| Done | Done | — |
-
-When transitioning within "In Progress" (e.g., Plan → Code), only update the label — no status transition needed.
+Pick the transition whose `name` matches the target status exactly (case-insensitive).
 
 ### Add a Comment
 
@@ -182,32 +170,21 @@ Do all replacements in one pass on the description string, then call `editJiraIs
 
 ---
 
-## Workflow Phase Labels
-
-Labels track the fine-grained SDLC phase. When advancing phases within "In Progress":
-
-```
-# Moving from Plan phase to Code phase:
-mcp__plugin_atlassian_atlassian__editJiraIssue(
-  issueIdOrKey: "<id>",
-  labels: ["code", ...existing-user-labels]   // replace "plan" with "code"
-)
-```
-
-Always preserve non-workflow labels when updating. Workflow phase labels are: `intake`, `plan`, `code`, `ai-review`.
-
----
-
 ## Status Reference
 
-| Backlog Concept | JIRA Status | Workflow Label |
-|---|---|---|
-| To Do | To Do | — |
-| Intake | In Progress | `intake` |
-| Plan | In Progress | `plan` |
-| Code | In Progress | `code` |
-| AI Code Review | In Progress / In Review | `ai-review` |
-| Done | Done | — |
+The JIRA board uses these exact statuses — transition to them by name:
+
+| Workflow Step | JIRA Status |
+|---|---|
+| Available for work | `To Do` |
+| Branch created, work claimed | `Intake` |
+| Awaiting human intake review (optional gate) | `Intake Review` |
+| Implementation planning | `Plan` |
+| Awaiting human plan review (optional gate) | `Plan Review` |
+| Writing code | `Code` |
+| AI code review in progress | `AI Code Review` |
+| Awaiting human code review (optional gate) | `Human Code Review` |
+| Complete | `Done` |
 
 ---
 
@@ -220,19 +197,21 @@ searchJiraIssuesUsingJql('project = "PROJ" AND status = "To Do" ORDER BY priorit
 # 2. Read task
 getJiraIssue("PROJ-42")
 
-# 3. Start work: transition to In Progress, add intake label
-getTransitionsForJiraIssue("PROJ-42") → find "In Progress" transition id
+# 3. Start work: transition to Intake
+getTransitionsForJiraIssue("PROJ-42") → find "Intake" transition id
 transitionJiraIssue("PROJ-42", transitionId)
-editJiraIssue("PROJ-42", labels: ["intake"])
 
 # 4. Record branch
 addCommentToJiraIssue("PROJ-42", "## [BRANCH]\n\nfeature/proj-42-add-auth")
 
-# 5. Add implementation plan
+# 5. Transition to Plan, add implementation plan
+getTransitionsForJiraIssue("PROJ-42") → find "Plan" transition id
+transitionJiraIssue("PROJ-42", transitionId)
 addCommentToJiraIssue("PROJ-42", "## [PLAN]\n\n1. Analyze\n2. Implement\n3. Test")
 
-# 6. Update phase label to "plan"
-editJiraIssue("PROJ-42", labels: ["plan"])
+# 6. Transition to Code, implement
+getTransitionsForJiraIssue("PROJ-42") → find "Code" transition id
+transitionJiraIssue("PROJ-42", transitionId)
 
 # 7. Append implementation notes
 addCommentToJiraIssue("PROJ-42", "## [NOTES]\n\n- Investigated root cause\n- Added edge case tests")
@@ -242,10 +221,12 @@ getJiraIssue("PROJ-42")  → get current description
 # Replace "- [ ] #1" with "- [x] #1" etc.
 editJiraIssue("PROJ-42", description: <updated description with ACs checked>)
 
-# 9. Add final summary
-addCommentToJiraIssue("PROJ-42", "## [FINAL SUMMARY]\n\nImplemented X using Y pattern. Updated files Z, W.")
+# 9. Transition to AI Code Review
+getTransitionsForJiraIssue("PROJ-42") → find "AI Code Review" transition id
+transitionJiraIssue("PROJ-42", transitionId)
 
-# 10. Mark done
+# 10. Add final summary and mark done
+addCommentToJiraIssue("PROJ-42", "## [FINAL SUMMARY]\n\nImplemented X using Y pattern. Updated files Z, W.")
 getTransitionsForJiraIssue("PROJ-42") → find "Done" transition id
 transitionJiraIssue("PROJ-42", transitionId)
 ```
@@ -308,6 +289,5 @@ planComment = issue.comments.find(c => c.body.startsWith("## [PLAN]"))
 
 - Never read or write JIRA data outside of the MCP tools
 - Always use `getTransitionsForJiraIssue` before `transitionJiraIssue` — never guess transition IDs
-- When updating labels, always preserve non-workflow labels
 - ACs must be managed by editing the issue description, not by adding comments
-- Workflow phase labels (`intake`, `plan`, `code`, `ai-review`) are the single source of truth for fine-grained workflow state
+- JIRA status is the single source of truth for workflow phase — use real transitions, not labels
