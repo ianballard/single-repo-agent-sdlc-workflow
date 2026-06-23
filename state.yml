@@ -1,0 +1,44 @@
+schema_version: "1.0"
+engagement:
+  id: "single-repo-agent-sdlc-workflow"
+  name: "Single Repo Agent SDLC Workflow"
+  status: "in-flight"
+  started_at: "2026-06-23"
+  last_active_at: "2026-06-23T00:00:00Z"
+develop:
+  current_ticket: null
+  current_phase: "readiness"
+  current_droid: null
+  current_command: /atlas:develop-goal-workflow
+  current_task: null
+  target_language: "unknown"
+  story_class: null
+  invalidated_tests: []
+  invalidated_tests_approved_hash: null
+  repo_capabilities: null
+  mode: "standalone"
+  spec_ref: null
+  dag_ref: null
+  worktree_path: null
+  iteration_count: 0
+  budget:
+    cap_usd: 25.00
+    spent_usd: 0.00
+    last_updated_at: "2026-06-23T00:00:00Z"
+  task_progress: []
+  history: []
+  last_test_run_passed: null
+  last_test_run_at: null
+  diff_history: []
+  per_test_failure_counts: {}
+cost_estimates:
+  - timestamp: "2026-06-23T15:27:26Z"
+    tool: Write
+    parent_command: unknown
+    parent_agent: unknown
+    model: unknown
+    est_input_chars: 997
+    est_output_chars: 1074
+    est_input_tokens: 250
+    est_output_tokens: 269
+    est_cost_usd: 0.004785
