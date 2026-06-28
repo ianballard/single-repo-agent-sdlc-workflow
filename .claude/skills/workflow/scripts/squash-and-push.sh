@@ -64,7 +64,10 @@ else
   elif [ "$ahead" -gt 1 ]; then
     squash_msg="$(git log --format='%s%n%n%b' "$base..HEAD" --reverse)"
     git reset --soft "$(git merge-base "$base" HEAD)"
-    git commit -m "$commit_subject" -m "$squash_msg"
+    # --allow-empty: if the branch's changes net to nothing, the soft-reset
+    # leaves an empty index; without this the commit (and the whole closeout)
+    # would hard-fail after history has already been collapsed.
+    git commit --allow-empty -m "$commit_subject" -m "$squash_msg"
     echo "Squashed $ahead commits into one"
   else
     echo "1 commit ahead of $base — nothing to squash"

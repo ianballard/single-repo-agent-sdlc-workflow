@@ -54,7 +54,7 @@ The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL
 - JIRA status lifecycle: `To Do → Intake → Plan → Code → AI Code Review → Done` (optional gates: `Intake Review`, `Plan Review`, `Human Code Review`)
 - Uses gitflow branch naming: `feature/<issue-key>-description`, `fix/<issue-key>-description`, etc.
 - Commits at closeout only (not between steps) — all changes accumulate in worktree
-- Merge guard (Step 12) runs **before** marking the task Done — compares `<upstream>..HEAD` against the `## [MODIFIED FILES]` JIRA comment to detect scope creep
+- Merge guard (Step 12) runs **before** marking the task Done — compares the **working tree** (uncommitted changes since base, since commits are deferred to Step 13) against the `## [MODIFIED FILES]` JIRA comment to detect scope creep
 - Retries are bounded: AC verification, unit tests, e2e tests max 2 retries each; code review max 1 fix iteration
 - Emits `TASK_COMPLETE: <id> — <title>` on success or `WORKFLOW_BLOCKED: <reason>` on failure
 

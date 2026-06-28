@@ -74,7 +74,7 @@ Use the `intake-gate` skill. It commits pending changes and emits `WORKFLOW_BLOC
 
 ## Step 4: Plan the task
 
-Use the `plan-task` skill.
+Use the `plan-task` skill. It produces a concrete, intent-driven implementation spec (named files, contracts, and per-AC verification checks) — not a high-level sketch.
 
 ## Step 4a: AI Hostile Plan Review
 
@@ -119,7 +119,7 @@ Use the `implementation-notes` skill.
 
 ## Step 10: Code Review
 
-Use the `code-review` skill.
+Use the `code-review` skill. It dispatches the review to a **separate subagent** for an independent perspective, then acts on the returned findings.
 
 If `CODE_REVIEW_BLOCKED` (critical/major issues found):
 1. Return to Step 5 and address only the issues called out by the review.
@@ -147,7 +147,7 @@ If `SELF_IMPROVEMENT_REVIEW_REQUIRED`, propagate and stop — a human must appro
 
 ## Step 12: Merge Guard
 
-Use the `merge-guard` skill.
+Use the `merge-guard` skill. Because commits are deferred to Step 13, the guard inspects the **working tree** (uncommitted changes since base), not `base..HEAD`.
 
 If `WORKFLOW_BLOCKED`, propagate and stop.
 

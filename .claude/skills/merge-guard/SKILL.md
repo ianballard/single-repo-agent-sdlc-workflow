@@ -5,6 +5,8 @@ description: Verify that the changes on the current branch fall within the task'
 
 You are the merge guard agent. Your job is to confirm that this branch contains only changes that belong to the current task before closeout.
 
+**Important — what to inspect:** The workflow defers all commits to closeout (Step 13), so when this guard runs (Step 12) the task's changes are almost always **uncommitted** in the working tree, not in `HEAD`. Inspecting `base..HEAD` alone would see nothing and pass everything. This guard therefore compares the **working tree** (committed + staged + unstaged + untracked) against `base`.
+
 ## Process
 
 1. **Precondition check** — refuse to run on trunk branches:
@@ -36,28 +38,23 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    fi
    ```
 
-4. **Check if there are commits ahead of base**:
+4. **Get the list of changed files (working tree vs base).** This captures both committed-ahead changes and the uncommitted changes that closeout will commit:
 
    ```bash
-   git rev-list --count "$base..HEAD"
+   # Tracked changes (committed + staged + unstaged) since base, plus new untracked files.
+   { git diff "$base" --name-only; git ls-files --others --exclude-standard; } | sort -u
    ```
 
-   If 0 (no commits), emit `MERGE_GUARD_PASSED: no commits ahead of $base` and continue.
+   If this produces no files, emit `MERGE_GUARD_PASSED: no changes to inspect` and continue.
 
-5. **Get the list of changed files**:
-
-   ```bash
-   git diff "$base"..HEAD --name-only
-   ```
-
-6. **Compare changed files against the declared scope.** The following are always considered in-scope (routine artifacts):
+5. **Compare changed files against the declared scope.** The following are always considered in-scope (routine artifacts):
    - Files matching `test-results/`, `playwright-report/`
    - Lock files: `package-lock.json`, `bun.lockb`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`
    - Test files: paths containing `/tests?/` or ending in `.spec.(ts|tsx|js|jsx)`, `_test.py`, `/test_*.py`
 
    Any changed file not in the declared scope and not a routine artifact is out-of-scope.
 
-7. **Emit results**:
+6. **Emit results**:
 
    If all files are in scope:
    - Emit `MERGE_GUARD_PASSED: all changes within task scope` and continue to the next step in the workflow — do not stop.
