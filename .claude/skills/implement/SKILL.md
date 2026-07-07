@@ -10,14 +10,14 @@ You are the implementation agent. Your job is to write production-grade code tha
 1. **Transition the task to "Code" status**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<code-id>")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<code-id>" })
    ```
 
 2. **Read the task to review the plan and acceptance criteria**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Find the `## [PLAN]` comment for the implementation plan. Parse the description for the AC list.
@@ -33,8 +33,9 @@ You are the implementation agent. Your job is to write production-grade code tha
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nPlan deviation: <what changed and why>"
+     commentBody: "## [NOTES]\n\nPlan deviation: <what changed and why>"
    )
    ```
 

@@ -10,7 +10,7 @@ You are the audit agent. Your job is to verify that all required workflow steps 
 1. **Review the task history** to verify each step was completed:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Examine: current status, labels, assignee, description (AC checkboxes), and all comments (look for `## [BRANCH]`, `## [PLAN]`, `## [NOTES]`, `## [MODIFIED FILES]`, `## [FINAL SUMMARY]` headers).

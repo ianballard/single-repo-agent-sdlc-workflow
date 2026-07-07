@@ -6,11 +6,21 @@ description: Manage backlog tasks using the JIRA MCP. Create, edit, assign, prio
 
 All task operations use the JIRA Atlassian MCP plugin. Never read or write task data any other way.
 
+## Cloud ID Discovery
+
+Every call below requires a `cloudId` argument — there is no default. Discover it once per session/workflow run and reuse it for every subsequent call documented here; do not re-fetch per call.
+
+```
+mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources()
+```
+
+Returns the accessible Atlassian sites, each with a `cloudId`. If there is exactly one, use it. If multiple, pick the one matching the current repo/context or ask the user. Capture it as `<cloudId>` — every example below assumes it is already known.
+
 ## Project Discovery
 
 If the JIRA project key is not already known from context, discover it:
 
-1. Call `mcp__plugin_atlassian_atlassian__getVisibleJiraProjects` to list accessible projects
+1. Call `mcp__plugin_atlassian_atlassian__getVisibleJiraProjects(cloudId: "<cloudId>")` to list accessible projects
 2. Pick the one that matches the current repo/context, or ask the user if multiple exist
 3. Capture the project key (e.g., `PROJ`) — use it in all subsequent JQL and issue creation
 
@@ -43,7 +53,7 @@ JIRA fields used by this workflow:
 ### Read a Task
 
 ```
-mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
 ```
 
 Returns all fields: summary, description, status, assignee, labels, priority, and comments.
@@ -52,6 +62,7 @@ Returns all fields: summary, description, status, assignee, labels, priority, an
 
 ```
 mcp__plugin_atlassian_atlassian__searchJiraIssuesUsingJql(
+  cloudId: "<cloudId>",
   jql: 'project = "<PROJECT>" AND status = "To Do" ORDER BY priority ASC, created ASC',
   fields: ["summary", "status", "priority", "assignee", "labels"]
 )
@@ -77,13 +88,16 @@ project = "PROJ" AND status in ("Intake", "Plan", "Code", "AI Code Review")
 
 ```
 mcp__plugin_atlassian_atlassian__createJiraIssue(
+  cloudId: "<cloudId>",
   projectKey: "<PROJECT>",
   summary: "Task title",
   description: "## Description\n\n<why>\n\n## Acceptance Criteria\n\n- [ ] #1 First criterion\n- [ ] #2 Second criterion",
   issueTypeName: "Story",   // or "Task", "Bug"
-  priority: "Medium"
+  additional_fields: { priority: { name: "Medium" } }
 )
 ```
+
+`priority` (and any other field without its own parameter, e.g. `labels`, `components`) is set via `additional_fields`, not as a top-level argument.
 
 Include ACs directly in the description using the `- [ ] #N text` format.
 
@@ -91,39 +105,48 @@ Include ACs directly in the description using the `- [ ] #N text` format.
 
 ```
 mcp__plugin_atlassian_atlassian__editJiraIssue(
+  cloudId: "<cloudId>",
   issueIdOrKey: "<id>",
-  summary: "New title",           // optional
-  description: "<markdown>",      // optional — replaces entire description
-  assignee: "<account-id>",       // optional
-  labels: ["label1", "label2"],   // optional — replaces entire label list
-  priority: "High"                // optional
+  fields: {
+    summary: "New title",                      // optional
+    description: "<markdown>",                 // optional — replaces entire description
+    assignee: { accountId: "<account-id>" },    // optional
+    labels: ["label1", "label2"],               // optional — replaces entire label list
+    priority: { name: "High" }                  // optional
+  }
 )
 ```
+
+All field updates go inside a single `fields` object — there is no flat/top-level field syntax.
 
 ### Change Status (Transitions)
 
 Always discover transitions before transitioning — the available transition IDs depend on the current status:
 
 ```
-1. mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+1. mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    → Returns list of {id, name} transitions available from current status
 
 2. mcp__plugin_atlassian_atlassian__transitionJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     transitionId: "<id-from-step-1>"
+     transition: { id: "<id-from-step-1>" }
    )
 ```
 
-Pick the transition whose `name` matches the target status exactly (case-insensitive).
+Pick the transition whose `name` matches the target status exactly (case-insensitive). Note the parameter is `transition: { id: "..." }`, not a flat `transitionId`.
 
 ### Add a Comment
 
 ```
 mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+  cloudId: "<cloudId>",
   issueIdOrKey: "<id>",
-  comment: "## [NOTES]\n\n<content>"
+  commentBody: "## [NOTES]\n\n<content>"
 )
 ```
+
+The comment text argument is `commentBody`, not `comment`.
 
 Comment type headers used by this workflow:
 - `## [BRANCH]` — set during intake; value is the git branch name
@@ -135,10 +158,10 @@ Comment type headers used by this workflow:
 ### Lookup User Account ID
 
 ```
-mcp__plugin_atlassian_atlassian__lookupJiraAccountId(query: "<email or name>")
+mcp__plugin_atlassian_atlassian__lookupJiraAccountId(cloudId: "<cloudId>", searchString: "<email or name>")
 ```
 
-Use to get the account ID needed for assignee updates.
+Use to get the account ID needed for assignee updates. The search argument is `searchString`, not `query`.
 
 ---
 
@@ -162,7 +185,7 @@ Fetch the issue and parse the description for `- [ ] #N` and `- [x] #N` lines.
 
 1. Fetch the full description via `getJiraIssue`
 2. Find the line matching `- [ ] #<index>` and replace with `- [x] #<index>`
-3. Update with `editJiraIssue(issueIdOrKey, description: <updated>)`
+3. Update with `editJiraIssue(cloudId, issueIdOrKey, fields: { description: <updated> })`
 
 ### Checking Multiple ACs
 
@@ -190,45 +213,47 @@ The JIRA board uses these exact statuses — transition to them by name:
 
 ## Full Workflow Example
 
+`cloudId` is required on every call below and omitted here for brevity — thread it through each one.
+
 ```
 # 1. Find work
-searchJiraIssuesUsingJql('project = "PROJ" AND status = "To Do" ORDER BY priority ASC, created ASC')
+searchJiraIssuesUsingJql(jql: 'project = "PROJ" AND status = "To Do" ORDER BY priority ASC, created ASC')
 
 # 2. Read task
-getJiraIssue("PROJ-42")
+getJiraIssue(issueIdOrKey: "PROJ-42")
 
 # 3. Start work: transition to Intake
-getTransitionsForJiraIssue("PROJ-42") → find "Intake" transition id
-transitionJiraIssue("PROJ-42", transitionId)
+getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "Intake" transition id
+transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
 
 # 4. Record branch
-addCommentToJiraIssue("PROJ-42", "## [BRANCH]\n\nfeature/proj-42-add-auth")
+addCommentToJiraIssue(issueIdOrKey: "PROJ-42", commentBody: "## [BRANCH]\n\nfeature/proj-42-add-auth")
 
 # 5. Transition to Plan, add implementation plan
-getTransitionsForJiraIssue("PROJ-42") → find "Plan" transition id
-transitionJiraIssue("PROJ-42", transitionId)
-addCommentToJiraIssue("PROJ-42", "## [PLAN]\n\n1. Analyze\n2. Implement\n3. Test")
+getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "Plan" transition id
+transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
+addCommentToJiraIssue(issueIdOrKey: "PROJ-42", commentBody: "## [PLAN]\n\n1. Analyze\n2. Implement\n3. Test")
 
 # 6. Transition to Code, implement
-getTransitionsForJiraIssue("PROJ-42") → find "Code" transition id
-transitionJiraIssue("PROJ-42", transitionId)
+getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "Code" transition id
+transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
 
 # 7. Append implementation notes
-addCommentToJiraIssue("PROJ-42", "## [NOTES]\n\n- Investigated root cause\n- Added edge case tests")
+addCommentToJiraIssue(issueIdOrKey: "PROJ-42", commentBody: "## [NOTES]\n\n- Investigated root cause\n- Added edge case tests")
 
 # 8. Check off ACs
-getJiraIssue("PROJ-42")  → get current description
+getJiraIssue(issueIdOrKey: "PROJ-42")  → get current description
 # Replace "- [ ] #1" with "- [x] #1" etc.
-editJiraIssue("PROJ-42", description: <updated description with ACs checked>)
+editJiraIssue(issueIdOrKey: "PROJ-42", fields: { description: <updated description with ACs checked> })
 
 # 9. Transition to AI Code Review
-getTransitionsForJiraIssue("PROJ-42") → find "AI Code Review" transition id
-transitionJiraIssue("PROJ-42", transitionId)
+getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "AI Code Review" transition id
+transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
 
 # 10. Add final summary and mark done
-addCommentToJiraIssue("PROJ-42", "## [FINAL SUMMARY]\n\nImplemented X using Y pattern. Updated files Z, W.")
-getTransitionsForJiraIssue("PROJ-42") → find "Done" transition id
-transitionJiraIssue("PROJ-42", transitionId)
+addCommentToJiraIssue(issueIdOrKey: "PROJ-42", commentBody: "## [FINAL SUMMARY]\n\nImplemented X using Y pattern. Updated files Z, W.")
+getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "Done" transition id
+transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
 ```
 
 ---

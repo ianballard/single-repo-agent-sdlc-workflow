@@ -32,7 +32,7 @@ fi
 2. **Review the task details** to understand the original requirements:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Review the description (AC list) and existing comments (plan, any prior notes).
@@ -68,8 +68,9 @@ fi
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\n<implementation notes>"
+     commentBody: "## [NOTES]\n\n<implementation notes>"
    )
    ```
 
@@ -77,8 +78,9 @@ fi
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [MODIFIED FILES]\n\n<list of files from git diff --stat>"
+     commentBody: "## [MODIFIED FILES]\n\n<list of files from git diff --stat>"
    )
    ```
 

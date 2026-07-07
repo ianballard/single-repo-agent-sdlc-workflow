@@ -16,7 +16,7 @@ A task is ready when it clearly defines all four of:
 1. **Read the task in full**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Review the `summary`, `description` (which contains the description text and AC list), and any existing comments.
@@ -28,8 +28,9 @@ A task is ready when it clearly defines all four of:
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nTASK ASSESSMENT — REFINEMENT NEEDED:\n- <specific gap and what information is required to resolve it>"
+     commentBody: "## [NOTES]\n\nTASK ASSESSMENT — REFINEMENT NEEDED:\n- <specific gap and what information is required to resolve it>"
    )
    ```
    - Emit `TASK_REFINEMENT_NEEDED: <id> — <one-line summary of what is missing>` and stop.

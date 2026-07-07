@@ -28,15 +28,16 @@ You are the intake agent. Your job is to start the development workflow for a cl
 
    ```
    # Get available transitions
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    
    # Transition to Intake
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<intake-id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<intake-id>" })
    
    # Assign to current user
    mcp__plugin_atlassian_atlassian__editJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     assignee: "<current-user-account-id>"   // use lookupJiraAccountId if needed
+     fields: { assignee: { accountId: "<current-user-account-id>" } }   // use lookupJiraAccountId if needed
    )
    ```
 
@@ -44,8 +45,9 @@ You are the intake agent. Your job is to start the development workflow for a cl
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [BRANCH]\n\n<branch>\n\nBase: <base>"
+     commentBody: "## [BRANCH]\n\n<branch>\n\nBase: <base>"
    )
    ```
 

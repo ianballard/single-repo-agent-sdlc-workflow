@@ -23,7 +23,7 @@ git diff --stat
 3. Review the task details to understand what was implemented:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
 4. Stage only the changes belonging to this task. Prefer explicit paths over `git add .`:

@@ -11,12 +11,13 @@ This workflow runs autonomously. The `manage-backlog-tasks` skill contains gener
 
 ## Task Rule
 
-There must always be an associated JIRA issue with any implementation. If one does not exist yet, create one in JIRA with just the details that you already have (use `mcp__plugin_atlassian_atlassian__createJiraIssue`).
+There must always be an associated JIRA issue with any implementation. If one does not exist yet, create one in JIRA with just the details that you already have (use `mcp__plugin_atlassian_atlassian__createJiraIssue(cloudId: "<cloudId>", ...)`).
 
 ## Variable bindings (used throughout)
 
 After Steps 1–2b, you must hold these bindings for the rest of the workflow. If any becomes unset, re-derive it before continuing.
 
+- `<cloudId>` — the Atlassian cloud ID discovered in Step 1 (via `getAccessibleAtlassianResources`); every JIRA MCP call in every step requires it — reuse it rather than re-fetching
 - `<id>` — the task ID claimed in Step 1 (e.g., `task-3`)
 - `<title>` — the task title from Step 1
 - `<branch>` — the feature branch name captured from `INTAKE_COMPLETE` in Step 2
