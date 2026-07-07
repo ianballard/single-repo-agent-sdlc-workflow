@@ -20,7 +20,7 @@ Do not manufacture recommendations. If the workflow ran smoothly and nothing sta
 1. **Read the completed task** to review what happened during execution:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Review the task description, labels, and all comments (plan, notes, code review findings, etc.).
@@ -36,8 +36,9 @@ Do not manufacture recommendations. If the workflow ran smoothly and nothing sta
    - Write it to the task as a JIRA comment:
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nSELF-IMPROVEMENT: <specific recommendation>"
+     commentBody: "## [NOTES]\n\nSELF-IMPROVEMENT: <specific recommendation>"
    )
    ```
    - Use the `commit` skill to commit all pending changes (exit path — no later closeout commit will run).

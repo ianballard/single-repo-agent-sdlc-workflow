@@ -31,8 +31,8 @@ fi
 1. **Transition the task to "AI Code Review" status**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<ai-code-review-id>")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<ai-code-review-id>" })
    ```
 
 2. **Gather the review inputs.** Capture the full diff and the task context to hand to the reviewer subagent:
@@ -44,7 +44,7 @@ fi
    ```
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    From the issue, pull the description (AC list) and the `## [PLAN]` comment.
@@ -89,8 +89,9 @@ fi
    - Document each issue and add as a JIRA comment:
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nCODE REVIEW FINDINGS:\n- <file>:<line> [critical] <description> — fix: <suggested fix>\n- <file>:<line> [major] <description> — fix: <suggested fix>"
+     commentBody: "## [NOTES]\n\nCODE REVIEW FINDINGS:\n- <file>:<line> [critical] <description> — fix: <suggested fix>\n- <file>:<line> [major] <description> — fix: <suggested fix>"
    )
    ```
    - Output `CODE_REVIEW_BLOCKED: <number> critical/major issues found` and stop.
@@ -99,8 +100,9 @@ fi
    - Add review summary as a JIRA comment:
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nCODE REVIEW: Approved with <number> minor suggestions"
+     commentBody: "## [NOTES]\n\nCODE REVIEW: Approved with <number> minor suggestions"
    )
    ```
    - Emit `CODE_REVIEW_APPROVED: <summary>` and continue on to the next step in the workflow — do not stop.

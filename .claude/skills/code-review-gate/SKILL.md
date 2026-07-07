@@ -10,16 +10,17 @@ You are the code review gate agent. This skill is only invoked when the user has
 1. **Transition the JIRA issue to "Human Code Review" status**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<human-code-review-id>")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<human-code-review-id>" })
    ```
 
 2. **Add a comment indicating human code review is needed**:
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nAwaiting human code review. Implementation must be reviewed before closeout."
+     commentBody: "## [NOTES]\n\nAwaiting human code review. Implementation must be reviewed before closeout."
    )
    ```
 

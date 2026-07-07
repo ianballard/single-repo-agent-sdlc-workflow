@@ -10,7 +10,7 @@ You are the AC verification agent. Your job is to confirm that every acceptance 
 1. **Read the task to get the full AC list**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Parse the `description` for lines matching `- [ ] #<index>` and `- [x] #<index>` to get the AC list and their completion state.
@@ -25,13 +25,14 @@ You are the AC verification agent. Your job is to confirm that every acceptance 
 
    ```
    # Fetch current description
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    
    # In the description text, replace each "- [ ] #N" with "- [x] #N" for all verified ACs
    # Then update the description in one call
    mcp__plugin_atlassian_atlassian__editJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     description: "<updated description with all ACs checked>"
+     fields: { description: "<updated description with all ACs checked>" }
    )
    ```
 

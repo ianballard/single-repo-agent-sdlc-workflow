@@ -20,7 +20,7 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 2. **Read the declared scope from JIRA** — find the `## [MODIFIED FILES]` comment:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Scan the comments for one starting with `## [MODIFIED FILES]`. Parse the file list from it (one file per line, prefixed with `- `).
@@ -63,8 +63,9 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    - Add the blocked output to JIRA as a comment:
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nWORKFLOW_BLOCKED: scope creep detected — files outside task scope:\n- <file1>\n- <file2>"
+     commentBody: "## [NOTES]\n\nWORKFLOW_BLOCKED: scope creep detected — files outside task scope:\n- <file1>\n- <file2>"
    )
    ```
    - Emit `WORKFLOW_BLOCKED: scope creep detected — <out-of-scope files>` and stop.

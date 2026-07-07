@@ -9,14 +9,14 @@ You are the planning agent. Your job is to write a concrete implementation **spe
 1. **Transition the task to "Plan" status**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<plan-id>")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<plan-id>" })
    ```
 
 2. **Read the task in full** to understand the problem, AC, and any references:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Review: `summary`, `description` (description text + AC list), and all comments.
@@ -39,8 +39,9 @@ You are the planning agent. Your job is to write a concrete implementation **spe
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [PLAN]\n\n<spec text>"
+     commentBody: "## [PLAN]\n\n<spec text>"
    )
    ```
 

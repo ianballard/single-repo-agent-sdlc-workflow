@@ -10,16 +10,17 @@ You are the intake gate agent. This skill is only invoked when the user has expl
 1. **Transition the JIRA issue to "Intake Review" status**:
 
    ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<intake-review-id>")
+   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<intake-review-id>" })
    ```
 
 2. **Add a comment indicating human review is needed**:
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nAwaiting human intake review. Task definition must be approved before planning begins."
+     commentBody: "## [NOTES]\n\nAwaiting human intake review. Task definition must be approved before planning begins."
    )
    ```
 

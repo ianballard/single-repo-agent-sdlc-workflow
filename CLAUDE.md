@@ -34,6 +34,7 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **verify-ac** - Verifies every acceptance criterion is met and marks them complete in JIRA description
 - **unit-tests** - Creates/updates and runs unit tests
 - **e2e-tests** - Runs Playwright end-to-end tests
+- **lint-format** - Auto-formats and lints changed code (Prettier/ESLint for frontend & e2e, Ruff for backend), fixing what's fixable, before code review
 - **implementation-notes** - Documents implementation details as JIRA comments
 - **code-review** - Performs comprehensive code quality review
 - **code-review-gate** - Optional human code review gate (Step 10b)
@@ -46,7 +47,7 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **manage-backlog-tasks** - Documents all JIRA MCP operations used by the workflow
 
 The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL.md`):
-1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Optional human plan review → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, mark done, tear down worktree)
+1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Optional human plan review → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 8b. Lint & format → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, mark done, tear down worktree)
 
 **Key workflow behaviors:**
 - All task reads and writes use JIRA MCP tools via the `manage-backlog-tasks` skill

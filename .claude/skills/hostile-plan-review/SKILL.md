@@ -22,7 +22,7 @@ Review the plan on these dimensions:
 1. **Read the task** to understand the requirements and the plan:
 
    ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(issueIdOrKey: "<id>")
+   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
    Review the description (AC list) and the `## [PLAN]` comment.
@@ -38,8 +38,9 @@ Review the plan on these dimensions:
    - Append the findings as a JIRA comment:
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nHOSTILE PLAN REVIEW — BLOCKING ISSUES:\n- <finding 1>\n- <finding 2>"
+     commentBody: "## [NOTES]\n\nHOSTILE PLAN REVIEW — BLOCKING ISSUES:\n- <finding 1>\n- <finding 2>"
    )
    ```
    - Emit `HOSTILE_REVIEW_BLOCKED: <count> blocking issue(s) found — <one-line summary>` and stop. The workflow will return to Step 4 to revise the plan.
@@ -48,8 +49,9 @@ Review the plan on these dimensions:
    - Append a brief summary:
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
-     comment: "## [NOTES]\n\nHOSTILE PLAN REVIEW — PASSED (<count> warning(s), <count> minor(s))"
+     commentBody: "## [NOTES]\n\nHOSTILE PLAN REVIEW — PASSED (<count> warning(s), <count> minor(s))"
    )
    ```
    - Emit `HOSTILE_REVIEW_PASSED` and continue on to the next step in the workflow — do not stop.

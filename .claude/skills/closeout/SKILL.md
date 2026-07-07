@@ -40,8 +40,9 @@ Use the `open-pr` skill from the worktree root, passing `<base>` from step 2 so 
 
 ```
 mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+  cloudId: "<cloudId>",
   issueIdOrKey: "<id>",
-  comment: "## [FINAL SUMMARY]\n\nPR: <url>\n\n<PR-description-style summary of what was implemented>"
+  commentBody: "## [FINAL SUMMARY]\n\nPR: <url>\n\n<PR-description-style summary of what was implemented>"
 )
 ```
 
@@ -51,10 +52,10 @@ Write it like a reviewer will see it: what changed, why, user impact, tests run,
 
 ```
 # Get available transitions
-mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(issueIdOrKey: "<id>")
+mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
 
 # Transition to Done (pick the matching transition id)
-mcp__plugin_atlassian_atlassian__transitionJiraIssue(issueIdOrKey: "<id>", transitionId: "<done-id>")
+mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<done-id>" })
 ```
 
 ### 5. Tear down the worktree
