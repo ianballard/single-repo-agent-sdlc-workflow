@@ -38,6 +38,7 @@ Exception: exit-path steps (those that stop the workflow early) commit before st
 - AC verification (Step 6): max 2 retries before emitting `WORKFLOW_BLOCKED: AC not met after 2 retries — <ids>` and stopping.
 - Unit tests (Step 7): max 2 retries before emitting `WORKFLOW_BLOCKED: unit tests failing after 2 retries` and stopping.
 - E2E tests (Step 8): max 2 retries before emitting `WORKFLOW_BLOCKED: e2e tests failing after 2 retries` and stopping.
+- Lint & format (Step 8b): max 2 retries before emitting `WORKFLOW_BLOCKED: lint/format issues unresolved after 2 retries` and stopping.
 - Code review (Step 10): max 1 review→fix→re-review iteration. If a second pass still emits `CODE_REVIEW_BLOCKED`, use the `commit` skill (exit path) and emit `WORKFLOW_BLOCKED: code review unresolved after 1 fix iteration`.
 - Hostile plan review (Step 4a): max 2 retries before emitting `WORKFLOW_BLOCKED: plan failed after 2 retries — <ids>` and stopping.
 
@@ -112,6 +113,12 @@ Use the `e2e-tests` skill.
 
 If `E2E_TESTS_BLOCKED`, return to Step 5 with the failure details. Apply the e2e retry cap. `E2E_TESTS_SKIPPED` is not a blocker — continue.
 
+## Step 8b: Lint & Format
+
+Use the `lint-format` skill. It auto-fixes formatting and lint issues in the changed areas so code review sees clean, consistent code.
+
+If `LINT_BLOCKED`, return to Step 5 with the failure details. Apply the lint/format retry cap.
+
 ## Step 9: Write implementation notes to the task
 
 Use the `implementation-notes` skill.
@@ -122,7 +129,7 @@ Use the `code-review` skill. It dispatches the review to a **separate subagent**
 
 If `CODE_REVIEW_BLOCKED` (critical/major issues found):
 1. Return to Step 5 and address only the issues called out by the review.
-2. Re-run Steps 6, 7, 8, 9, and this Step 10.
+2. Re-run Steps 6, 7, 8, 8b, 9, and this Step 10.
 
 Apply the code review retry cap.
 

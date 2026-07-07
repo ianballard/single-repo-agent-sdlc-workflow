@@ -59,6 +59,9 @@ You are the audit agent. Your job is to verify that all required workflow steps 
    **Step 8: E2E Tests** (`e2e-tests` skill)
    - [ ] `E2E_TESTS_PASSED` or `E2E_TESTS_SKIPPED` (with documented reason) was emitted
 
+   **Step 8b: Lint & Format** (`lint-format` skill)
+   - [ ] `LINT_FORMAT_PASSED` was emitted (or blocking issues were resolved and re-run)
+
    **Step 9: Implementation Notes** (`implementation-notes` skill)
    - [ ] A `## [NOTES]` comment exists with implementation details
    - [ ] A `## [MODIFIED FILES]` comment exists
