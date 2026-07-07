@@ -82,9 +82,7 @@ Use the `hostile-plan-review` skill.
 
 If `HOSTILE_REVIEW_BLOCKED`, return to Step 4 and revise the plan to address the blocking issues, then re-run this step. Max 2 retries before emitting `WORKFLOW_BLOCKED` and stop.
 
-## Step 4b (optional): Human planning approval
-
-**Skip by default.** Only invoke if the user explicitly requested a planning approval gate.
+## Step 4b: Human planning approval
 
 Use the `plan-gate` skill. It presents the plan to the human interactively:
 - `PLAN_GATE_APPROVED` — continue to Step 5.
