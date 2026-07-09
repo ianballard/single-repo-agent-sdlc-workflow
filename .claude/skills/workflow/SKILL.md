@@ -7,7 +7,7 @@ You are the workflow coordinator. Your job is to process exactly one JIRA task f
 
 ## Autonomy override
 
-This workflow runs autonomously. The `manage-backlog-tasks` skill contains general guidance that says to "share the plan with the user and ask for confirmation" before coding — **ignore that guidance while running the workflow**. The only human gates in this workflow are the optional steps 3b, 4b, and 10b, and they only activate when explicitly enabled.
+This workflow runs autonomously. The `manage-backlog-tasks` skill contains general guidance that says to "share the plan with the user and ask for confirmation" before coding — **ignore that guidance while running the workflow**. The optional human gates in this workflow are steps 3b, 4b, and 10b, and they only activate when explicitly enabled. Closeout (Step 13) is not optional and always ends with the task in Human Code Review rather than Done — a human reviews the pushed PR and moves the issue to Done afterward.
 
 ## Task Rule
 
@@ -159,7 +159,7 @@ If `WORKFLOW_BLOCKED`, propagate and stop.
 
 ## Step 13: Closeout
 
-Use the `closeout` skill. As part of closeout (after the branch is pushed), it invokes the `open-pr` skill to open a GitHub pull request for `<branch>` and records the PR URL in the Final Summary comment on the JIRA issue.
+Use the `closeout` skill. As part of closeout (after the branch is pushed), it invokes the `open-pr` skill to open a GitHub pull request for `<branch>` and records the PR URL in the Final Summary comment on the JIRA issue. Closeout moves the issue to Human Code Review, not Done — a human reviews the PR and marks it Done afterward.
 
 If `WORKFLOW_BLOCKED`, propagate and stop.
 

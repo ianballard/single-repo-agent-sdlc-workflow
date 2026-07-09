@@ -15,7 +15,7 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    git branch --show-current
    ```
 
-   If the result is `main`, `master`, or `develop`, emit `WORKFLOW_BLOCKED: workflow running on <branch> branch — feature branch required` and stop.
+   If the result is `main`, `master`, `develop`, or `staging`, emit `WORKFLOW_BLOCKED: workflow running on <branch> branch — feature branch required` and stop.
 
 2. **Read the declared scope from JIRA** — find the `## [MODIFIED FILES]` comment:
 
@@ -30,10 +30,10 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    ```bash
    base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
    if [ -z "$base" ]; then
-     if git rev-parse --verify origin/main >/dev/null 2>&1; then
-       base="origin/main"
+     if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+       base="origin/develop"
      else
-       base="main"
+       base="develop"
      fi
    fi
    ```

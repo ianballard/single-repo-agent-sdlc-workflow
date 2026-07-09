@@ -9,9 +9,9 @@
 #   .claude/skills/workflow/scripts/squash-and-push.sh <task-id> "<conventional-commit-subject>" [base-branch]
 #
 # [base-branch] is the branch the feature branch was cut from (recorded by the
-# intake skill). Without it, a branch cut from anything other than main gets
-# squashed against origin/main, folding the parent branch's own commits into
-# the task commit.
+# intake skill). Without it, a branch cut from anything other than develop
+# gets squashed against origin/develop, folding the parent branch's own
+# commits into the task commit.
 #
 # Exit codes:
 #   0  Squashed (or nothing to squash) and pushed successfully.
@@ -32,7 +32,7 @@ commit_subject="$2"
 base_branch="${3:-}"
 current_branch="$(git branch --show-current)"
 
-# Derive the diff base: explicit base branch wins, then upstream, then main.
+# Derive the diff base: explicit base branch wins, then upstream, then develop.
 base=""
 if [ -n "$base_branch" ]; then
   if git rev-parse --verify "origin/$base_branch" >/dev/null 2>&1; then
@@ -47,10 +47,10 @@ if [ -z "$base" ]; then
   base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 fi
 if [ -z "$base" ]; then
-  if git rev-parse --verify origin/main >/dev/null 2>&1; then
-    base="origin/main"
+  if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+    base="origin/develop"
   else
-    base="main"
+    base="develop"
   fi
 fi
 
