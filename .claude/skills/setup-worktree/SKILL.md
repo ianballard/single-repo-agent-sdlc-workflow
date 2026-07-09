@@ -20,12 +20,12 @@ WORKTREE_PATH="$REPO_ROOT/.claude/worktrees/<branch>"
 mkdir -p "$REPO_ROOT/.claude/worktrees"
 ```
 
-3. If the repo is currently on the feature branch, switch to `main` first — git refuses to create a worktree for a branch that is already checked out:
+3. If the repo is currently on the feature branch, switch to `develop` (the default branch) first — git refuses to create a worktree for a branch that is already checked out:
 
 ```bash
 CURRENT="$(git branch --show-current)"
 if [ "$CURRENT" = "<branch>" ]; then
-  git checkout main
+  git checkout develop
 fi
 ```
 

@@ -10,7 +10,7 @@
 #
 # Exit codes:
 #   0  All changes in scope.
-#   1  Repo is on main/master/develop (feature branch required).
+#   1  Repo is on main/master/develop/staging (feature branch required).
 #   2  Out-of-scope files detected.
 #   3  Argument or environment error.
 #
@@ -59,7 +59,7 @@ is_ignored() {
 # Precondition: must be on a feature branch.
 current_branch="$(git branch --show-current)"
 case "$current_branch" in
-  main|master|develop)
+  main|master|develop|staging)
     echo "WORKFLOW_BLOCKED: workflow running on $current_branch branch — feature branch required"
     exit 1
     ;;
@@ -68,10 +68,10 @@ esac
 # Derive the diff base.
 base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [ -z "$base" ]; then
-  if git rev-parse --verify origin/main >/dev/null 2>&1; then
-    base="origin/main"
+  if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+    base="origin/develop"
   else
-    base="main"
+    base="develop"
   fi
 fi
 

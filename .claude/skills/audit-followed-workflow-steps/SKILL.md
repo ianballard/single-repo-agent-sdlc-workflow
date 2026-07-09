@@ -15,7 +15,7 @@ You are the audit agent. Your job is to verify that all required workflow steps 
 
    Examine: current status, labels, assignee, description (AC checkboxes), and all comments (look for `## [BRANCH]`, `## [PLAN]`, `## [NOTES]`, `## [MODIFIED FILES]`, `## [FINAL SUMMARY]` headers).
 
-2. **Verify the following checklist.** Expected status progression: `To Do → Intake → Plan → Code → AI Code Review → Done`.
+2. **Verify the following checklist.** Expected status progression: `To Do → Intake → Plan → Code → AI Code Review → Human Code Review → Done`. Closeout moves the issue to Human Code Review, not Done — Done is a human-only transition made after reviewing the PR.
 
    **Step 1: Work Claimed**
    - [ ] Task ID and title appear in the workflow context

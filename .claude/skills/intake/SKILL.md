@@ -57,5 +57,5 @@ You are the intake agent. Your job is to start the development workflow for a cl
 ## Rules
 
 - The branch name must include the issue key so it can be traced back
-- Never create the branch from main/master/develop if the repo is already on a feature branch — check with `git branch --show-current` first and abort if already on a feature branch
+- Never create the branch from main/master/develop/staging if the repo is already on a feature branch — check with `git branch --show-current` first and abort if already on a feature branch
 - Keep the slug short and readable; avoid filler words like "the", "a", "and"

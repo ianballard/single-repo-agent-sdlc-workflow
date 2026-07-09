@@ -12,10 +12,10 @@ From the workspace root, derive the base branch for diffing:
 ```bash
 base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [ -z "$base" ]; then
-  if git rev-parse --verify origin/main >/dev/null 2>&1; then
-    base="origin/main"
+  if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+    base="origin/develop"
   else
-    base="main"
+    base="develop"
   fi
 fi
 ```
