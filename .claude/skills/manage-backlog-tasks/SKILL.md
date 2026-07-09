@@ -45,6 +45,8 @@ JIRA fields used by this workflow:
 | Final Summary | Comment | Header: `## [FINAL SUMMARY]` |
 | Modified Files | Comment | Header: `## [MODIFIED FILES]` |
 | Branch Ref | Comment | Header: `## [BRANCH]` |
+| Flagged | Custom checkboxes field (e.g. `customfield_10021`, named `Flagged`) | Non-empty (e.g. `[{"value": "Impediment"}]`) = flagged. Field key varies by site — discover via `getJiraIssueTypeMetaWithFields`, don't hardcode. |
+| Blocking relationship | `issuelinks` | A link with `type.inward == "is blocked by"` and `inwardIssue` set means this issue is blocked by `inwardIssue`. Link type IDs vary by site — discover via `getIssueLinkTypes`. |
 
 ---
 
@@ -154,6 +156,31 @@ Comment type headers used by this workflow:
 - `## [NOTES]` — appended during implementation; progress log entries
 - `## [MODIFIED FILES]` — set during implementation; list of files changed
 - `## [FINAL SUMMARY]` — set during closeout; PR-description-style summary
+
+### Check Whether an Issue Is Flagged or Blocked
+
+Used by `check-for-work` before claiming a task. Both checks require a one-time discovery per session:
+
+```
+mcp__plugin_atlassian_atlassian__getIssueLinkTypes(cloudId: "<cloudId>")
+```
+
+Find the type whose `inward` phrase is `"is blocked by"` (default Jira Cloud names it `Blocks`). Capture its `id`.
+
+```
+mcp__plugin_atlassian_atlassian__getJiraIssueTypeMetaWithFields(cloudId: "<cloudId>", projectIdOrKey: "<PROJECT>", issueTypeId: "<issue-type-id>", requiredFieldsOnly: false)
+```
+
+Find the field named `Flagged` (a checkboxes custom field). Capture its `key`. Neither the link type ID nor the flagged field key is guaranteed to be the same across different JIRA sites — always discover them, never hardcode.
+
+Then, when reading a candidate issue, request both:
+
+```
+mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: ["status", "priority", "issuelinks", "<flaggedFieldKey>"])
+```
+
+- Flagged: the `<flaggedFieldKey>` value is a non-empty array (e.g. `[{"value": "Impediment"}]`) rather than `null`.
+- Blocked: an `issuelinks` entry has `type.id` matching the discovered Blocks link type and an `inwardIssue` present — that `inwardIssue.key` is a blocker. Fetch the blocker with `responseContentFormat: "markdown"` (comment bodies are ADF JSON otherwise, not the plain `## [BRANCH]` text you need to extract a branch name from). A blocker counts as resolved if its `status.statusCategory.key` is `done` (the category, not `status.name` — a site can rename its terminal status to anything), or if its `## [BRANCH]` comment's branch name has an `OPEN` or `MERGED` PR (`gh pr list --head "<branch>" --state all --json state,url`). Checking the PR state, not just JIRA status, matters if a variant of `closeout` in use hands a finished task off for human review instead of transitioning it straight to `Done`.
 
 ### Lookup User Account ID
 
