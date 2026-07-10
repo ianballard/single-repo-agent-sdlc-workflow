@@ -24,7 +24,7 @@ You are the code review gate agent. This skill is only invoked when the user has
    )
    ```
 
-3. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+3. Follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label.
 
 4. Emit `WORKFLOW_BLOCKED: human code review required for task <id> — implementation must be reviewed before closeout` and stop.
 
@@ -32,5 +32,5 @@ The human reviews the code (the branch is pushed so the diff is visible in GitHu
 
 ## Rules
 
-- Always commit before stopping — pending changes must not be lost
+- Always follow the Blocked exit protocol before stopping — pending changes must not be lost
 - This skill always emits `WORKFLOW_BLOCKED` — it never continues the workflow

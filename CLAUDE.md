@@ -23,7 +23,7 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 
 **Component Skills** (called by workflow):
 - **check-for-work** - Claims tasks from JIRA by issue key or priority
-- **intake** - Creates the feature branch and sets task to In Progress / intake label in JIRA
+- **intake** - Creates the feature branch, transitions the JIRA issue to Intake, and assigns it to the current user
 - **setup-worktree** - Creates a git worktree at `.claude/worktrees/<branch>` so all task work is branch-isolated
 - **assess-task** - Evaluates whether a JIRA task is sufficiently well-defined to implement
 - **intake-gate** - Optional human intake approval gate (Step 3b)

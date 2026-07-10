@@ -43,8 +43,10 @@ JIRA fields used by this workflow:
 | Implementation Plan | Comment | Header: `## [PLAN]` |
 | Implementation Notes | Comments | Header: `## [NOTES]` (append; multiple allowed) |
 | Final Summary | Comment | Header: `## [FINAL SUMMARY]` |
-| Modified Files | Comment | Header: `## [MODIFIED FILES]` |
+| Modified Files | Comment | Header: `## [MODIFIED FILES]` — historical record for reviewers; the merge guard enforces the plan's `### Files in scope`, not this list |
 | Branch Ref | Comment | Header: `## [BRANCH]` |
+| Scope Change | Comment | Header: `## [SCOPE CHANGE]` — set during implementation when a file outside the plan's declared scope must change; includes the reason |
+| Blocked | Comment | Header: `## [BLOCKED]` — set on an early workflow stop; records the block reason, step, branch, worktree, and checkpoint |
 | Flagged | Custom checkboxes field (e.g. `customfield_10021`, named `Flagged`) | Non-empty (e.g. `[{"value": "Impediment"}]`) = flagged. Field key varies by site — discover via `getJiraIssueTypeMetaWithFields`, don't hardcode. |
 | Blocking relationship | `issuelinks` | A link with `type.inward == "is blocked by"` and `inwardIssue` set means this issue is blocked by `inwardIssue`. Link type IDs vary by site — discover via `getIssueLinkTypes`. |
 
@@ -152,10 +154,14 @@ The comment text argument is `commentBody`, not `comment`.
 
 Comment type headers used by this workflow:
 - `## [BRANCH]` — set during intake; value is the git branch name
-- `## [PLAN]` — set during plan-task; implementation plan prose
+- `## [PLAN]` — set during plan-task; implementation plan prose. Contains a `### Files in scope` sub-section (one file or glob per line, prefixed `- `) — this is the authoritative scope the merge guard enforces
 - `## [NOTES]` — appended during implementation; progress log entries
-- `## [MODIFIED FILES]` — set during implementation; list of files changed
+- `## [MODIFIED FILES]` — set during implementation; list of files changed. Historical record for reviewers — the merge guard enforces the plan's `### Files in scope`, not this list
+- `## [SCOPE CHANGE]` — set during implementation; a file outside the plan's declared scope that must change, with reason
+- `## [BLOCKED]` — set on an early workflow stop; records the block reason, step, branch, worktree, checkpoint
 - `## [FINAL SUMMARY]` — set during closeout; PR-description-style summary
+
+Also relevant: the `workflow-blocked` JIRA label, added to an issue on an early workflow stop (via the Blocked exit protocol) so humans can find stalled work; it is removed on a successful resume that reaches closeout.
 
 ### Check Whether an Issue Is Flagged or Blocked
 

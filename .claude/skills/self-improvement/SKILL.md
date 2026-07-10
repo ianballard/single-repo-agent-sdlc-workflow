@@ -41,7 +41,7 @@ Do not manufacture recommendations. If the workflow ran smoothly and nothing sta
      commentBody: "## [NOTES]\n\nSELF-IMPROVEMENT: <specific recommendation>"
    )
    ```
-   - Use the `commit` skill to commit all pending changes (exit path — no later closeout commit will run).
+   - Follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label.
    - Emit `SELF_IMPROVEMENT_REVIEW_REQUIRED: task <id> — <recommendation summary>` and stop. A human must approve the recommendation before the workflow continues to closeout.
 
 4. **If no meaningful recommendation:**

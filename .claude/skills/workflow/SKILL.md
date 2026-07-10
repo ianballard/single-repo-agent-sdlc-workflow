@@ -29,6 +29,8 @@ After Steps 1–2b, you must hold these bindings for the rest of the workflow. I
 
 ## Checkpoint & resume
 
+`$REPO_ROOT` is the main repository root (`git rev-parse --show-toplevel` from the main checkout) — the same location closeout resolves via `git worktree list | head -1`.
+
 The current step and retry counters live only in conversation context and do not survive a crash, compaction, or a fresh session. Persist them after every completed step.
 
 **Location:** `"$REPO_ROOT/.claude/worktrees/<branch>.state.json"` — a sibling of the worktree, inside the gitignored `.claude/worktrees/` directory and *outside* the worktree's working tree, so it can never be committed or flagged by the merge guard.
@@ -97,7 +99,7 @@ Blocks before intake (Step 1) emit only — nothing exists yet to preserve. On a
 - Unit tests (Step 7): max 2 retries before emitting `WORKFLOW_BLOCKED: unit tests failing after 2 retries` and stopping.
 - E2E tests (Step 8): max 2 retries before emitting `WORKFLOW_BLOCKED: e2e tests failing after 2 retries` and stopping.
 - Lint & format (Step 8b): max 2 retries before emitting `WORKFLOW_BLOCKED: lint/format issues unresolved after 2 retries` and stopping.
-- Code review (Step 10): max 1 review→fix→re-review iteration. If a second pass still emits `CODE_REVIEW_BLOCKED`, use the `commit` skill (exit path) and emit `WORKFLOW_BLOCKED: code review unresolved after 1 fix iteration`.
+- Code review (Step 10): max 1 review→fix→re-review iteration. If a second pass still emits `CODE_REVIEW_BLOCKED`, follow the Blocked exit protocol, then emit `WORKFLOW_BLOCKED: code review unresolved after 1 fix iteration`.
 - Hostile plan review (Step 4a): max 2 retries before emitting `WORKFLOW_BLOCKED: plan failed after 2 retries — <ids>` and stopping.
 
 ---
@@ -126,7 +128,7 @@ If `WORKTREE_BLOCKED` is emitted (bootstrap failure), propagate as `WORKFLOW_BLO
 
 Use the `assess-task` skill.
 
-If `TASK_REFINEMENT_NEEDED`, use the `commit` skill (exit path), then emit `WORKFLOW_BLOCKED: <propagated reason>` and stop.
+If `TASK_REFINEMENT_NEEDED`, follow the Blocked exit protocol, then emit `WORKFLOW_BLOCKED: <propagated reason>` and stop.
 
 ## Step 3b (optional): Human intake approval
 

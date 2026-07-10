@@ -32,9 +32,9 @@ Unlike the intake and code review gates, this gate is **interactive**: present t
      ```
      Then rerun the `plan-task` skill once to revise the plan (which transitions back to "Plan"), present the revised plan and ask again (one retry only).
 
-   - **Not approved after the retry** — use the `commit` skill to commit all pending changes (exit path — no later closeout commit), emit `WORKFLOW_BLOCKED: planning approval blocked on task <id> — <reason>` and stop.
+   - **Not approved after the retry** — follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label. Then emit `WORKFLOW_BLOCKED: planning approval blocked on task <id> — <reason>` and stop.
 
 ## Rules
 
 - Maximum one plan revision before blocking — do not loop indefinitely
-- Always commit before stopping on the rejection path — pending changes must not be lost
+- Always follow the Blocked exit protocol before stopping on the rejection path — pending changes must not be lost

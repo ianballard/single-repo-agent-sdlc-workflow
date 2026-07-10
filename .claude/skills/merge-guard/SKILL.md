@@ -78,4 +78,4 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 - Never skip this step — it is the last safety check before code leaves this repo
 - Do not attempt to resolve scope issues manually; surface them and stop
 - If the `## [PLAN]` comment has no `### Files in scope` section (legacy task planned before scope declaration existed), scope cannot be enforced — emit `MERGE_GUARD_PASSED: no planned scope declared (legacy task — scope not enforced)` and continue
-- Glob entries in the declared scope match with standard shell glob semantics (`frontend/src/auth/*` matches any file under that directory)
+- A trailing `/*` or `/**` on a declared directory (e.g. `frontend/src/auth/*`) matches files at any depth beneath that directory (recursive), not just direct children
