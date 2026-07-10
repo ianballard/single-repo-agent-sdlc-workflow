@@ -1,15 +1,16 @@
 # Agent SDLC Workflow
 
-A harness for running an end-to-end software development lifecycle (SDLC) workflow with an autonomous agent. The agent claims backlog tasks, runs intake, plans and implements changes, runs tests and reviews, and closes out work.
+A harness for running an end-to-end software development lifecycle (SDLC) workflow with an autonomous agent. The agent claims tracker tasks, runs intake, plans and implements changes, runs tests and reviews, and closes out work.
 
 ## Architecture
 
-This is a mono-repo. All four project areas live as top-level subdirectories:
+This is a mono-repo. The project areas live as top-level subdirectories:
 
 - **frontend/** — React + TypeScript (Vite, Vitest)
 - **backend/** — FastAPI (Python 3.11+)
 - **e2e/** — Playwright end-to-end tests
-- **backlog/** — Backlog.md CLI-based task store
+
+Task tracking is external, not a directory in this repo. The agent speaks a tracker-agnostic **capability contract** (`docs/agents/issue-tracker.md`) — capability verbs, a workflow-phase vocabulary, and a comment-marker schema — realized by a per-tracker **adapter** under `.claude/skills/manage-backlog-tasks/adapters/`. The active adapter today is `jira.md`; `github.md` and `backlog.md` are example/legacy adapters proving the contract is swappable.
 
 ## Getting Started
 
@@ -21,18 +22,14 @@ This is a mono-repo. All four project areas live as top-level subdirectories:
 
 2. Create subdirectories for any role that doesn't exist yet:
    ```bash
-   mkdir -p frontend backend e2e backlog
+   mkdir -p frontend backend e2e
    ```
 
-3. Initialize the backlog (if starting fresh):
-   ```bash
-   cd backlog && backlog init && cd ..
+3. Set up the active issue tracker (JIRA by default): connect the Atlassian MCP plugin and make sure the project has these workflow statuses:
    ```
-
-4. Update backlog config.yml with required workflow statuses:
-```
-statuses: ["To Do", "Intake", "Intake Review", "Plan", "Plan Review", "Code", "AI Code Review", "Human Code Review", "Done"]
-``` 
+   To Do, Intake, Intake Review, Plan, Plan Review, Code, AI Code Review, Human Code Review, Done
+   ```
+   To use a different tracker, see the "Switching trackers" section of `docs/agents/issue-tracker.md`.
 
 ## Workflow
 
