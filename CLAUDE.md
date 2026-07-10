@@ -57,7 +57,7 @@ The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL
 - Commits at closeout only (not between steps) — all changes accumulate in worktree
 - Merge guard (Step 12) runs **before** closeout hands off for human review — compares the **working tree** (uncommitted changes since base, since commits are deferred to Step 13) against the plan's `### Files in scope` section plus any `## [SCOPE CHANGE]` comments to detect scope creep
 - Closeout (Step 13) never marks the task Done. It moves the issue to Human Code Review after the PR is opened; a human reviews the PR and transitions the issue to Done themselves.
-- Retries are bounded: AC verification, unit tests, e2e tests max 2 retries each; code review max 1 fix iteration
+- Retries are bounded: AC verification, unit tests, e2e tests, lint/format, hostile plan review max 2 retries each; code review max 1 fix iteration. Counters are cumulative per run (never reset), and a global ceiling of 6 total returns to implementation blocks a thrashing task
 - Emits `TASK_COMPLETE: <id> — <title>` on success or `WORKFLOW_BLOCKED: <reason>` on failure
 
 ## Working with the Workflow

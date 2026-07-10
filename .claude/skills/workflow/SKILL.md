@@ -35,6 +35,10 @@ Exception: exit-path steps (those that stop the workflow early) commit before st
 
 ## Loop & retry caps
 
+**Counter semantics:** each counter below is per-step and **cumulative for the entire run** — it never resets, not when returning to Step 5 and not when a code-review fix iteration re-runs Steps 6–10. (Example: e2e fails once before code review and once during the code-review re-run — the e2e counter is now 2 and a third failure blocks.) Track counters as: `ac`, `unit`, `e2e`, `lint`, `codeReview`, `hostilePlan`, `returnsToStep5`, and persist them to the checkpoint file (see Checkpoint & resume) every time one increments.
+
+**Global ceiling:** independent of the per-step caps, count every return to Step 5 regardless of cause (`returnsToStep5`). If it would exceed **6**, emit `WORKFLOW_BLOCKED: iteration ceiling reached (6 returns to implementation)` and stop — the task is thrashing and needs a human.
+
 - AC verification (Step 6): max 2 retries before emitting `WORKFLOW_BLOCKED: AC not met after 2 retries — <ids>` and stopping.
 - Unit tests (Step 7): max 2 retries before emitting `WORKFLOW_BLOCKED: unit tests failing after 2 retries` and stopping.
 - E2E tests (Step 8): max 2 retries before emitting `WORKFLOW_BLOCKED: e2e tests failing after 2 retries` and stopping.
