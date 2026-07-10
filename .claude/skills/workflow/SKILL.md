@@ -201,7 +201,7 @@ Use the `code-review-gate` skill. It commits pending changes and emits `WORKFLOW
 
 ## Step 11: Audit Followed All Steps
 
-Use the `audit-followed-workflow-steps` skill.
+Use the `audit-followed-workflow-steps` skill. Like code review (Step 10), dispatch the audit to a **separate subagent** — it verifies from JIRA and the worktree only, without the bias of having executed the steps itself.
 
 If `AUDIT_FAILED`, go back and complete the missing steps before continuing.
 
