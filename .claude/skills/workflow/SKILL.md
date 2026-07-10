@@ -232,4 +232,5 @@ If `WORKFLOW_BLOCKED`, propagate and stop.
 - Single session only: do not run two workflow sessions simultaneously
 - If stuck and cannot proceed, output `WORKFLOW_BLOCKED: <reason>` so the loop exits cleanly
 - Propagate any `*_BLOCKED` output from sub-skills as `WORKFLOW_BLOCKED: <propagated reason>`
+- **Signal discipline:** every sub-skill must emit its completion token **verbatim, on its own line** (e.g., `INTAKE_COMPLETE: <branch>`). Never infer success or failure from prose. If a sub-skill finishes without its expected token, ask it once to restate its outcome as the exact token; if it still cannot, treat the step as failed: `WORKFLOW_BLOCKED: missing completion signal from <skill>`
 - NEVER SKIP ANY STEPS IN THE OUTLINED PROCESS ABOVE.
