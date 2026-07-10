@@ -46,7 +46,7 @@ You are the work checker agent. Your job is to find and claim a task — either 
    ```
    mcp__plugin_atlassian_atlassian__searchJiraIssuesUsingJql(
      cloudId: "<cloudId>",
-     jql: 'project = "<PROJECT>" AND status = "To Do" ORDER BY priority ASC, created ASC',
+     jql: 'project = "<PROJECT>" AND status = "To Do" AND (assignee IS EMPTY OR assignee = currentUser()) ORDER BY priority ASC, created ASC',
      fields: ["summary", "status", "priority", "assignee", "labels", "issuetype", "issuelinks", "<flaggedFieldKey>"]
    )
    ```
@@ -59,7 +59,20 @@ You are the work checker agent. Your job is to find and claim a task — either 
    - Select the first remaining candidate.
    - If every candidate is flagged and/or blocked, emit `NO_WORK_AVAILABLE: all candidates flagged or blocked — <issue-keys>` and stop.
 
-7. **Emit the task information**:
+7. **Claim the selected issue immediately** by assigning it to the current user — this is the claim marker that closes the window where two sessions could pick the same To Do issue between selection and intake:
+
+   ```
+   mcp__plugin_atlassian_atlassian__lookupJiraAccountId(cloudId: "<cloudId>", searchString: "<current user email>")   # if account id not already known
+   mcp__plugin_atlassian_atlassian__editJiraIssue(
+     cloudId: "<cloudId>",
+     issueIdOrKey: "<issue-key>",
+     fields: { assignee: { accountId: "<current-user-account-id>" } }
+   )
+   ```
+
+   If the issue turns out to be already assigned to someone else at this point (race lost), skip it and return to step 6 to select the next candidate.
+
+8. **Emit the task information**:
    - Emit `<issue-key> — <summary>` and continue on to the next step in the workflow — do not stop.
 
 ## Flagged / Blocked check

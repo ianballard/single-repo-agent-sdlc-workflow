@@ -19,10 +19,15 @@ You are the intake agent. Your job is to start the development workflow for a cl
 
    ```bash
    base="$(git branch --show-current)"
-   git checkout -b <branch>
+   if git rev-parse --verify --quiet "<branch>" >/dev/null; then
+     # Branch already exists — this is a rerun (previous run blocked or crashed after intake).
+     git checkout "<branch>"
+   else
+     git checkout -b "<branch>"
+   fi
    ```
 
-   `<base>` is the branch the feature branch is cut from. It is recorded in JIRA (step 4) and used at closeout as the squash diff base and the PR target.
+   `<base>` is the branch the feature branch is cut from. It is recorded in JIRA (step 4) and used at closeout as the squash diff base and the PR target. **On the reuse path**, `git branch --show-current` is not the base — read `<base>` from the `Base:` line of the existing `## [BRANCH]` JIRA comment instead, and skip step 4 (don't post a duplicate comment).
 
 3. **Transition the JIRA issue to "Intake"** and assign to current user:
 
