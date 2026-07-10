@@ -17,13 +17,15 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 
    If the result is `main`, `master`, `develop`, or `staging`, emit `WORKFLOW_BLOCKED: workflow running on <branch> branch — feature branch required` and stop.
 
-2. **Read the declared scope from JIRA** — find the `## [MODIFIED FILES]` comment:
+2. **Read the declared scope from JIRA** — the scope is what was *planned*, never what was *changed* (comparing the diff against a list derived from the same diff proves nothing):
 
    ```
    mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    ```
 
-   Scan the comments for one starting with `## [MODIFIED FILES]`. Parse the file list from it (one file per line, prefixed with `- `).
+   - From the `## [PLAN]` comment, parse the `### Files in scope` section (one file or glob per line, prefixed with `- `).
+   - From every `## [SCOPE CHANGE]` comment, collect the additional declared files.
+   - The declared scope is the union of both. Ignore the `## [MODIFIED FILES]` comment — it is a historical record written from the diff itself.
 
 3. **Derive the diff base**:
 
@@ -75,4 +77,5 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 - Always run from the workspace root
 - Never skip this step — it is the last safety check before code leaves this repo
 - Do not attempt to resolve scope issues manually; surface them and stop
-- If no `## [MODIFIED FILES]` comment exists in JIRA, treat scope as unrestricted (no files are flagged as out-of-scope) and emit `MERGE_GUARD_PASSED: no scope declared`
+- If the `## [PLAN]` comment has no `### Files in scope` section (legacy task planned before scope declaration existed), scope cannot be enforced — emit `MERGE_GUARD_PASSED: no planned scope declared (legacy task — scope not enforced)` and continue
+- Glob entries in the declared scope match with standard shell glob semantics (`frontend/src/auth/*` matches any file under that directory)

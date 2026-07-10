@@ -55,7 +55,7 @@ The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL
 - JIRA status lifecycle: `To Do → Intake → Plan → Code → AI Code Review → Human Code Review → Done` (optional earlier gate: `Intake Review`; `Plan Review` is the status used by the required plan gate). `Human Code Review` is also closeout's mandatory hand-off state — `Done` is always a human-only transition, made after reviewing the PR
 - Uses gitflow branch naming: `feature/<issue-key>-description`, `fix/<issue-key>-description`, etc.
 - Commits at closeout only (not between steps) — all changes accumulate in worktree
-- Merge guard (Step 12) runs **before** closeout hands off for human review — compares the **working tree** (uncommitted changes since base, since commits are deferred to Step 13) against the `## [MODIFIED FILES]` JIRA comment to detect scope creep
+- Merge guard (Step 12) runs **before** closeout hands off for human review — compares the **working tree** (uncommitted changes since base, since commits are deferred to Step 13) against the plan's `### Files in scope` section plus any `## [SCOPE CHANGE]` comments to detect scope creep
 - Closeout (Step 13) never marks the task Done. It moves the issue to Human Code Review after the PR is opened; a human reviews the PR and transitions the issue to Done themselves.
 - Retries are bounded: AC verification, unit tests, e2e tests max 2 retries each; code review max 1 fix iteration
 - Emits `TASK_COMPLETE: <id> — <title>` on success or `WORKFLOW_BLOCKED: <reason>` on failure

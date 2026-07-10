@@ -74,7 +74,7 @@ fi
    )
    ```
 
-5. **Also record the modified files** (used by merge-guard):
+5. **Also record the modified files** (a historical record for reviewers; the merge guard enforces the plan's `### Files in scope`, not this list):
 
    ```
    mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(

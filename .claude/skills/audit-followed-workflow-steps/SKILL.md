@@ -37,6 +37,7 @@ You are the audit agent. Your job is to verify that all required workflow steps 
    **Step 4: Planning** (`plan-task` skill)
    - [ ] Task status is "Plan" or later
    - [ ] A `## [PLAN]` comment exists with the implementation plan
+   - [ ] The `## [PLAN]` comment contains a `### Files in scope` section
    - [ ] `PLAN_COMPLETE` was emitted
 
    **Step 4a: AI Hostile Plan Review** (`hostile-plan-review` skill)

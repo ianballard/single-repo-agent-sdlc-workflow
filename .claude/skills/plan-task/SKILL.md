@@ -32,6 +32,7 @@ You are the planning agent. Your job is to write a concrete implementation **spe
    - **Ordered** — steps that depend on earlier ones come later; call out dependencies.
    - **Verifiable** — for each AC, state the concrete check (test, command, or observable behavior) that will confirm it.
    - **Scoped** — list what is explicitly *out* of scope so implementation does not drift.
+   - **Scope-declared** — end the spec with a `### Files in scope` section: one file per line, prefixed `- `, listing every file the implementation is expected to add or change (exact paths; a glob like `frontend/src/components/auth/*` is acceptable for a new directory). This list is the scope the merge guard (Step 12) enforces — files changed outside it require a `## [SCOPE CHANGE]` comment at implementation time.
 
    Be specific about intent and contracts, but stop short of writing the full implementation — describe behavior and signatures, not line-by-line code or pseudocode bodies.
 
@@ -55,3 +56,4 @@ You are the planning agent. Your job is to write a concrete implementation **spe
 - If planning reveals the task scope is larger than the ACs suggest, note this explicitly in the spec — do not silently expand scope
 - Be concrete about intent and interfaces, but do not write the full implementation; describe behavior and signatures, not finished code
 - The spec drives implementation, AC verification, and code review later; make it specific enough to check against directly
+- The `### Files in scope` section is mandatory — without it the merge guard cannot enforce scope
