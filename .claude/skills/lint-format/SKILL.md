@@ -60,6 +60,24 @@ npm run lint          # frontend / e2e
 ruff check .           # backend
 ```
 
+3b. **If the auto-fix pass modified any files, re-run the unit tests for those areas.** Lint fixers can change behavior, and the test steps (7, 8) already passed before this skill ran — autofixed code must not ship untested. Detect whether fixes were applied by hashing the diff before and after step 2:
+
+```bash
+# before step 2:
+before="$(git diff | git hash-object --stdin)"
+# after step 2:
+after="$(git diff | git hash-object --stdin)"
+```
+
+If `before != after`, re-run the unit suite in each area whose files were modified:
+
+```bash
+cd frontend && npm test -- --run           # frontend (vitest)
+cd backend && .venv/bin/python -m pytest   # backend
+```
+
+If any test fails, emit `LINT_BLOCKED: auto-fix broke unit tests — <summary>` and stop (this counts against the lint retry cap; the workflow returns to the implement step).
+
 4. **If any errors remain after auto-fix:**
    - List the remaining errors with `<file>:<line>` and the rule that fired.
    - Emit `LINT_BLOCKED: <count> unresolved issue(s) — <summary>` and stop. The workflow will return to the implement step to fix them by hand.
