@@ -6,18 +6,9 @@ description: Write a concrete, intent-driven implementation spec for the current
 You are the planning agent. Your job is to write a concrete implementation **spec** — not a vague sketch — for a task before any code is written. The spec must be specific enough that a different engineer (or agent) could implement it without re-deriving your decisions, and specific enough that AC verification and code review can be checked directly against it.
 ## Process
 
-1. **Transition the task to "Plan" status**:
+1. **Move the task to `planning` phase**: `tracker.set-phase <id> planning`
 
-   ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<plan-id>" })
-   ```
-
-2. **Read the task in full** to understand the problem, AC, and any references:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+2. **Read the task in full** to understand the problem, AC, and any references: `tracker.read <id>`
 
    Review: `summary`, `description` (description text + AC list), and all comments.
 
@@ -32,18 +23,11 @@ You are the planning agent. Your job is to write a concrete implementation **spe
    - **Ordered** — steps that depend on earlier ones come later; call out dependencies.
    - **Verifiable** — for each AC, state the concrete check (test, command, or observable behavior) that will confirm it.
    - **Scoped** — list what is explicitly *out* of scope so implementation does not drift.
+   - **Scope-declared** — end the spec with a `### Files in scope` section: one file per line, prefixed `- `, listing every file the implementation is expected to add or change (exact paths; a glob like `frontend/src/components/auth/*` is acceptable for a new directory and covers files at any depth beneath it). This list is the scope the merge guard (Step 12) enforces — files changed outside it require a `## [SCOPE CHANGE]` comment at implementation time.
 
    Be specific about intent and contracts, but stop short of writing the full implementation — describe behavior and signatures, not line-by-line code or pseudocode bodies.
 
-5. **Write the spec to JIRA as a comment**:
-
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [PLAN]\n\n<spec text>"
-   )
-   ```
+5. **Write the spec as a comment**: `tracker.comment <id> [PLAN] "<spec text, including the ### Files in scope section>"`
 
 6. **Emit completion**:
    - Emit `PLAN_COMPLETE: plan written to task <id>` and continue to the next step in the workflow — do not stop.
@@ -55,3 +39,4 @@ You are the planning agent. Your job is to write a concrete implementation **spe
 - If planning reveals the task scope is larger than the ACs suggest, note this explicitly in the spec — do not silently expand scope
 - Be concrete about intent and interfaces, but do not write the full implementation; describe behavior and signatures, not finished code
 - The spec drives implementation, AC verification, and code review later; make it specific enough to check against directly
+- The `### Files in scope` section is mandatory — without it the merge guard cannot enforce scope

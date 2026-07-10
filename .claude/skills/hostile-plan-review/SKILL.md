@@ -19,11 +19,7 @@ Review the plan on these dimensions:
 
 ## Process
 
-1. **Read the task** to understand the requirements and the plan:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+1. **Read the task** to understand the requirements and the plan: `tracker.read <id>`
 
    Review the description (AC list) and the `## [PLAN]` comment.
 
@@ -35,25 +31,11 @@ Review the plan on these dimensions:
    - **Minor** — a gap or ambiguity that is low risk but worth noting
 
 4. **If there are blocking findings:**
-   - Append the findings as a JIRA comment:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nHOSTILE PLAN REVIEW — BLOCKING ISSUES:\n- <finding 1>\n- <finding 2>"
-   )
-   ```
+   - Append the findings: `tracker.comment <id> [NOTES] "HOSTILE PLAN REVIEW — BLOCKING ISSUES:\n- <finding 1>\n- <finding 2>"`
    - Emit `HOSTILE_REVIEW_BLOCKED: <count> blocking issue(s) found — <one-line summary>` and stop. The workflow will return to Step 4 to revise the plan.
 
 5. **If there are no blocking findings** (warnings and minors are acceptable):
-   - Append a brief summary:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nHOSTILE PLAN REVIEW — PASSED (<count> warning(s), <count> minor(s))"
-   )
-   ```
+   - Append a brief summary: `tracker.comment <id> [NOTES] "HOSTILE PLAN REVIEW — PASSED (<count> warning(s), <count> minor(s))"`
    - Emit `HOSTILE_REVIEW_PASSED` and continue on to the next step in the workflow — do not stop.
 
 ## Rules

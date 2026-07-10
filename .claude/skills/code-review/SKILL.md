@@ -28,12 +28,7 @@ fi
 
 ## Process
 
-1. **Transition the task to "AI Code Review" status**:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<ai-code-review-id>" })
-   ```
+1. **Move the task to `ai-review` phase**: `tracker.set-phase <id> ai-review`
 
 2. **Gather the review inputs.** Capture the full diff and the task context to hand to the reviewer subagent:
 
@@ -43,11 +38,7 @@ fi
    git status --porcelain      # surface any untracked files the reviewer should read
    ```
 
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
-
-   From the issue, pull the description (AC list) and the `## [PLAN]` comment.
+   `tracker.read <id>` — from the issue, pull the description (AC list) and the `## [PLAN]` comment.
 
 3. **Dispatch the review to a separate subagent.** Use the `Agent` tool with a self-contained prompt that includes: the task summary, the AC list, the `## [PLAN]` spec, and the diff (or the base ref and instructions to run the diff itself). Instruct the subagent to perform the comprehensive review described below and to **return** its findings as a structured list — each item tagged `[critical] | [major] | [minor]` with `<file>:<line>`, a description, and a suggested fix — plus an overall verdict. The subagent must not edit files, write to JIRA, or transition the issue; it only returns findings to you.
 
@@ -86,25 +77,11 @@ fi
 5. **Act on the subagent's findings.** Read the returned findings and verdict. Do not soften or re-litigate them; the subagent is the independent reviewer. Proceed to step 6 or 7 based on the highest severity present.
 
 6. **If critical or major issues are found:**
-   - Document each issue and add as a JIRA comment:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nCODE REVIEW FINDINGS:\n- <file>:<line> [critical] <description> — fix: <suggested fix>\n- <file>:<line> [major] <description> — fix: <suggested fix>"
-   )
-   ```
+   - Document each issue: `tracker.comment <id> [NOTES] "CODE REVIEW FINDINGS:\n- <file>:<line> [critical] <description> — fix: <suggested fix>\n- <file>:<line> [major] <description> — fix: <suggested fix>"`
    - Output `CODE_REVIEW_BLOCKED: <number> critical/major issues found` and stop.
 
 7. **If only minor issues or no issues are found:**
-   - Add review summary as a JIRA comment:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nCODE REVIEW: Approved with <number> minor suggestions"
-   )
-   ```
+   - Add review summary: `tracker.comment <id> [NOTES] "CODE REVIEW: Approved with <number> minor suggestions"`
    - Emit `CODE_REVIEW_APPROVED: <summary>` and continue on to the next step in the workflow — do not stop.
 
 ## Review Checklist

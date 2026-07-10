@@ -7,18 +7,18 @@ You are the workflow coordinator. Your job is to process exactly one JIRA task f
 
 ## Autonomy override
 
-This workflow runs autonomously. The `manage-backlog-tasks` skill contains general guidance that says to "share the plan with the user and ask for confirmation" before coding — **ignore that guidance while running the workflow**. The optional human gates in this workflow are steps 3b, 4b, and 10b, and they only activate when explicitly enabled. Closeout (Step 13) is not optional and always ends with the task in Human Code Review rather than Done — a human reviews the pushed PR and moves the issue to Done afterward.
+This workflow runs autonomously. The `manage-backlog-tasks` skill contains general guidance that says to "share the plan with the user and ask for confirmation" before coding — **ignore that guidance while running the workflow**. The optional human gates in this workflow are steps 3b and 10b, and they only activate when explicitly enabled. Step 4b (human plan approval) is **required** and always runs. Closeout (Step 13) is not optional and always ends with the task in Human Code Review rather than Done — a human reviews the pushed PR and moves the issue to Done afterward.
 
 ## Task Rule
 
-There must always be an associated JIRA issue with any implementation. If one does not exist yet, create one in JIRA with just the details that you already have (use `mcp__plugin_atlassian_atlassian__createJiraIssue(cloudId: "<cloudId>", ...)`).
+There must always be an associated tracker issue with any implementation. If one does not exist yet, create one with just the details that you already have (`tracker.create {summary, description, type, priority}`).
 
 ## Variable bindings (used throughout)
 
 After Steps 1–2b, you must hold these bindings for the rest of the workflow. If any becomes unset, re-derive it before continuing.
 
-- `<cloudId>` — the Atlassian cloud ID discovered in Step 1 (via `getAccessibleAtlassianResources`); every JIRA MCP call in every step requires it — reuse it rather than re-fetching
-- `<id>` — the task ID claimed in Step 1 (e.g., `task-3`)
+- `<cloudId>` — tracker session handle established by `tracker.session-init` in Step 1 (JIRA-specific; other adapters may not need it). Reuse for the run.
+- `<id>` — the tracker issue key claimed in Step 1 (e.g., `KAN-42`)
 - `<title>` — the task title from Step 1
 - `<branch>` — the feature branch name captured from `INTAKE_COMPLETE` in Step 2
 - `<worktree>` — the absolute worktree path captured from `WORKTREE_READY` in Step 2b
@@ -27,19 +27,65 @@ After Steps 1–2b, you must hold these bindings for the rest of the workflow. I
 
 **From Step 3 onward, all skills execute with `<worktree>` as their working root.** The worktree is a complete checkout of the feature branch — `frontend/`, `backend/`, `e2e/`, `.claude/`, and all scripts are present there. Script references (e.g., `bash .claude/skills/…`) all resolve correctly from within the worktree.
 
+## Checkpoint & resume
+
+`$REPO_ROOT` is the main repository root (`git rev-parse --show-toplevel` from the main checkout) — the same location closeout resolves via `git worktree list | head -1`.
+
+The current step and retry counters live only in conversation context and do not survive a crash, compaction, or a fresh session. Persist them after every completed step.
+
+**Location:** `"$REPO_ROOT/.claude/worktrees/<branch>.state.json"` — a sibling of the worktree, inside the gitignored `.claude/worktrees/` directory and *outside* the worktree's working tree, so it can never be committed or flagged by the merge guard.
+
+**Write after every completed step from Step 2b onward** (and whenever a retry counter increments):
+
+```bash
+mkdir -p "$(dirname "$REPO_ROOT/.claude/worktrees/<branch>.state.json")"
+cat > "$REPO_ROOT/.claude/worktrees/<branch>.state.json" <<EOF
+{
+  "cloudId": "<cloudId>",
+  "id": "<id>",
+  "title": "<title>",
+  "branch": "<branch>",
+  "worktree": "<worktree>",
+  "lastCompletedStep": "<step, e.g. 8b>",
+  "counters": { "ac": 0, "unit": 0, "e2e": 0, "lint": 0, "codeReview": 0, "hostilePlan": 0, "returnsToStep5": 0 }
+}
+EOF
+```
+
+**Resume check (before Step 1):** run `find "$REPO_ROOT/.claude/worktrees" -name '*.state.json' 2>/dev/null`. If a checkpoint exists, read it and fetch its issue. If the issue is still assigned to this agent and not in `Human Code Review` or `Done`, restore all bindings and counters from the file and resume at the step after `lastCompletedStep` instead of claiming new work. If the issue has moved on, delete the stale checkpoint and proceed to Step 1 normally.
+
+**Cleanup:** closeout deletes the checkpoint during worktree teardown. Blocked exits keep it — it is the resume material.
+
 ## Commit discipline
 
 **Do not commit between steps.** Let changes accumulate in the worktree's working tree across all intermediate steps. Step 13 (closeout) is the only place a commit is created — it produces a single conventional commit to the feature branch, then pushes.
 
-Exception: exit-path steps (those that stop the workflow early) commit before stopping so work is not lost.
+Exception: exit-path steps (those that stop the workflow early) follow the **Blocked exit protocol** below — commit, push, comment, label — so work is recoverable and the task is discoverable.
+
+## Blocked exit protocol
+
+Every early stop (`WORKFLOW_BLOCKED` for any reason) after intake has created the branch must run these steps before emitting:
+
+1. **Commit** pending changes with the `commit` skill (skip if the working tree is clean).
+2. **Push** so work is recoverable off this machine: `git push -u origin <branch>`.
+3. **Comment**: `tracker.comment <id> [BLOCKED] "WORKFLOW_BLOCKED at Step <n>: <reason>\n\nBranch: <branch>\nWorktree: <worktree>\nCheckpoint: .claude/worktrees/<branch>.state.json\n\nResume: re-run the workflow — it resumes from the checkpoint."`
+4. **Label** the issue so humans can find stalled work: `tracker.set-labels <id> add workflow-blocked`
+5. **Keep** the worktree and checkpoint file in place — they are the resume material. Do not tear down.
+6. **Emit** `WORKFLOW_BLOCKED: <reason>` and stop.
+
+Blocks before intake (Step 1) emit only — nothing exists yet to preserve. On a successful resume that reaches closeout, remove the `workflow-blocked` label.
 
 ## Loop & retry caps
+
+**Counter semantics:** each counter below is per-step and **cumulative for the entire run** — it never resets, not when returning to Step 5 and not when a code-review fix iteration re-runs Steps 6–10. (Example: e2e fails once before code review and once during the code-review re-run — the e2e counter is now 2 and a third failure blocks.) Track counters as: `ac`, `unit`, `e2e`, `lint`, `codeReview`, `hostilePlan`, `returnsToStep5`, and persist them to the checkpoint file (see Checkpoint & resume) every time one increments.
+
+**Global ceiling:** independent of the per-step caps, count every return to Step 5 regardless of cause (`returnsToStep5`). If it would exceed **6**, emit `WORKFLOW_BLOCKED: iteration ceiling reached (6 returns to implementation)` and stop — the task is thrashing and needs a human.
 
 - AC verification (Step 6): max 2 retries before emitting `WORKFLOW_BLOCKED: AC not met after 2 retries — <ids>` and stopping.
 - Unit tests (Step 7): max 2 retries before emitting `WORKFLOW_BLOCKED: unit tests failing after 2 retries` and stopping.
 - E2E tests (Step 8): max 2 retries before emitting `WORKFLOW_BLOCKED: e2e tests failing after 2 retries` and stopping.
 - Lint & format (Step 8b): max 2 retries before emitting `WORKFLOW_BLOCKED: lint/format issues unresolved after 2 retries` and stopping.
-- Code review (Step 10): max 1 review→fix→re-review iteration. If a second pass still emits `CODE_REVIEW_BLOCKED`, use the `commit` skill (exit path) and emit `WORKFLOW_BLOCKED: code review unresolved after 1 fix iteration`.
+- Code review (Step 10): max 1 review→fix→re-review iteration. If a second pass still emits `CODE_REVIEW_BLOCKED`, follow the Blocked exit protocol, then emit `WORKFLOW_BLOCKED: code review unresolved after 1 fix iteration`.
 - Hostile plan review (Step 4a): max 2 retries before emitting `WORKFLOW_BLOCKED: plan failed after 2 retries — <ids>` and stopping.
 
 ---
@@ -62,17 +108,19 @@ Use the `setup-worktree` skill.
 
 Capture `<worktree>` from the emitted `WORKTREE_READY: <worktree>`. All subsequent steps run from `<worktree>` as the working root.
 
+If `WORKTREE_BLOCKED` is emitted (bootstrap failure), propagate as `WORKFLOW_BLOCKED: <propagated reason>` and stop.
+
 ## Step 3: Assess task definition
 
 Use the `assess-task` skill.
 
-If `TASK_REFINEMENT_NEEDED`, use the `commit` skill (exit path), then emit `WORKFLOW_BLOCKED: <propagated reason>` and stop.
+If `TASK_REFINEMENT_NEEDED`, follow the Blocked exit protocol, then emit `WORKFLOW_BLOCKED: <propagated reason>` and stop.
 
 ## Step 3b (optional): Human intake approval
 
 **Skip by default.** Only invoke if the user explicitly requested an intake approval gate.
 
-Use the `intake-gate` skill. It commits pending changes and emits `WORKFLOW_BLOCKED` — propagate and stop.
+Use the `intake-gate` skill. It follows the Blocked exit protocol and emits `WORKFLOW_BLOCKED` — propagate and stop.
 
 ## Step 4: Plan the task
 
@@ -84,9 +132,9 @@ Use the `hostile-plan-review` skill.
 
 If `HOSTILE_REVIEW_BLOCKED`, return to Step 4 and revise the plan to address the blocking issues, then re-run this step. Max 2 retries before emitting `WORKFLOW_BLOCKED` and stop.
 
-## Step 4b: Human planning approval
+## Step 4b: Human planning approval (required — always runs)
 
-Use the `plan-gate` skill. It presents the plan to the human interactively:
+Use the `plan-gate` skill. Unlike Steps 3b and 10b this gate is not skip-by-default — it always runs. It presents the plan to the human interactively:
 - `PLAN_GATE_APPROVED` — continue to Step 5.
 - Changes requested — the gate reruns `plan-task` once and asks again.
 - `WORKFLOW_BLOCKED` (not approved after the retry) — propagate and stop.
@@ -137,11 +185,11 @@ Apply the code review retry cap.
 
 **Skip by default.** Only invoke if the user explicitly requested a human code review gate.
 
-Use the `code-review-gate` skill. It commits pending changes and emits `WORKFLOW_BLOCKED` — propagate and stop.
+Use the `code-review-gate` skill. It follows the Blocked exit protocol and emits `WORKFLOW_BLOCKED` — propagate and stop.
 
 ## Step 11: Audit Followed All Steps
 
-Use the `audit-followed-workflow-steps` skill.
+Use the `audit-followed-workflow-steps` skill. Like code review (Step 10), dispatch the audit to a **separate subagent** — it verifies from JIRA and the worktree only, without the bias of having executed the steps itself.
 
 If `AUDIT_FAILED`, go back and complete the missing steps before continuing.
 
@@ -168,8 +216,9 @@ If `WORKFLOW_BLOCKED`, propagate and stop.
 ## Rules
 
 - Process exactly one task per invocation
-- All task reads and writes go through JIRA MCP tools via the `manage-backlog-tasks` skill — never bypass with direct API calls or file edits
+- All task reads and writes go through the tracker contract verbs (`docs/agents/issue-tracker.md`) via the `manage-backlog-tasks` skill's active adapter — never bypass with direct API calls or file edits
 - Single session only: do not run two workflow sessions simultaneously
 - If stuck and cannot proceed, output `WORKFLOW_BLOCKED: <reason>` so the loop exits cleanly
 - Propagate any `*_BLOCKED` output from sub-skills as `WORKFLOW_BLOCKED: <propagated reason>`
+- **Signal discipline:** every sub-skill must emit its completion token **verbatim, on its own line** (e.g., `INTAKE_COMPLETE: <branch>`). Never infer success or failure from prose. If a sub-skill finishes without its expected token, ask it once to restate its outcome as the exact token; if it still cannot, treat the step as failed: `WORKFLOW_BLOCKED: missing completion signal from <skill>`
 - NEVER SKIP ANY STEPS IN THE OUTLINED PROCESS ABOVE.

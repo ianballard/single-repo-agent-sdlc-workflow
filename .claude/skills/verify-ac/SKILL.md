@@ -7,13 +7,7 @@ You are the AC verification agent. Your job is to confirm that every acceptance 
 
 ## Process
 
-1. **Read the task to get the full AC list**:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
-
-   Parse the `description` for lines matching `- [ ] #<index>` and `- [x] #<index>` to get the AC list and their completion state.
+1. **Read the AC list**: `tracker.read-acs <id>` — returns the `- [ ] #<index>` / `- [x] #<index>` lines and their completion state.
 
 2. **For each acceptance criterion**, verify it against the actual implementation. Read the relevant code, run commands, or check outputs as needed. Do not accept "it should work" as verification — confirm it actually works.
 
@@ -21,20 +15,7 @@ You are the AC verification agent. Your job is to confirm that every acceptance 
    - List which ACs failed with a precise description of what is missing or broken
    - Emit `AC_VERIFICATION_FAILED: AC(s) <indices> not met — <brief description>` and stop. The workflow will return to the implement step.
 
-4. **If all ACs are met**, check off each one in the JIRA description:
-
-   ```
-   # Fetch current description
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   
-   # In the description text, replace each "- [ ] #N" with "- [x] #N" for all verified ACs
-   # Then update the description in one call
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     fields: { description: "<updated description with all ACs checked>" }
-   )
-   ```
+4. **If all ACs are met**, check off each one: `tracker.set-acs <id> <all verified indexes>`
 
 5. **Emit completion**:
    - Emit `AC_VERIFIED: all <count> criteria met` and continue to the next step in the workflow — do not stop.
@@ -45,4 +26,4 @@ You are the AC verification agent. Your job is to confirm that every acceptance 
 - Use the actual AC indices from the description (they may not be sequential after edits)
 - If an AC is ambiguous about what "done" means, apply the stricter interpretation
 - Do not proceed to unit tests if any AC is unverified
-- Make all description checkbox updates in a single `editJiraIssue` call (fetch once, update all, write once)
+- Check off all verified ACs in a single `tracker.set-acs` call

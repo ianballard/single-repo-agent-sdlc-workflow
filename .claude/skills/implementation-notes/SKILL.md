@@ -29,11 +29,7 @@ fi
    git log "$base"..HEAD --oneline
    ```
 
-2. **Review the task details** to understand the original requirements:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+2. **Review the task details** to understand the original requirements: `tracker.read <id>`
 
    Review the description (AC list) and existing comments (plan, any prior notes).
 
@@ -64,25 +60,9 @@ fi
    - Potential improvements or optimizations
    - Related work that may be needed
 
-4. **Append the implementation notes as a JIRA comment**:
+4. **Append the implementation notes**: `tracker.comment <id> [NOTES] "<implementation notes>"`
 
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\n<implementation notes>"
-   )
-   ```
-
-5. **Also record the modified files** (used by merge-guard):
-
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [MODIFIED FILES]\n\n<list of files from git diff --stat>"
-   )
-   ```
+5. **Also record the modified files** (a historical record for reviewers; the merge guard enforces the plan's `### Files in scope`, not this list): `tracker.comment <id> [MODIFIED FILES] "<list of files from git diff --stat>"`
 
 6. **Emit completion**:
    - Emit `IMPLEMENTATION_NOTES_COMPLETE: notes added to task <id>` and continue on to the next step in the workflow — do not stop.

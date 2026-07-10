@@ -15,7 +15,7 @@ Use the `commit` skill from the worktree root. This produces one conventional co
 
 ### 2. Squash and push
 
-First determine `<base>` — the branch the feature branch was cut from. Read the `Base:` line of the `## [BRANCH]` JIRA comment (recorded by intake). If the comment has no `Base:` line (older tasks), fall back to the repo default branch (`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `develop`).
+First determine `<base>` — the branch the feature branch was cut from. Read it via `tracker.read-comments <id> [BRANCH]` and take the `Base:` line. If the comment has no `Base:` line (older tasks), fall back to the repo default branch (`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `develop`).
 
 From `<worktree>`:
 
@@ -36,15 +36,9 @@ Use the `open-pr` skill from the worktree root, passing `<base>` from step 2 so 
 - `PR_OPENED: <url>` — record the URL; it goes into the Final Summary comment in the next step.
 - `PR_BLOCKED` — emit `WORKFLOW_BLOCKED: closeout PR failed — <propagated reason>` and stop. Do not transition the task or tear down the worktree.
 
-### 3. Add the Final Summary to JIRA
+### 3. Add the Final Summary
 
-```
-mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-  cloudId: "<cloudId>",
-  issueIdOrKey: "<id>",
-  commentBody: "## [FINAL SUMMARY]\n\nPR: <url>\n\n<PR-description-style summary of what was implemented>"
-)
-```
+`tracker.comment <id> [FINAL SUMMARY] "PR: <url>\n\n<PR-description-style summary of what was implemented>"`
 
 Write it like a reviewer will see it: what changed, why, user impact, tests run, and any risks or follow-ups. Include the PR URL from step 2b.
 
@@ -52,13 +46,7 @@ Write it like a reviewer will see it: what changed, why, user impact, tests run,
 
 Closeout hands off to a human reviewer instead of marking the task Done — the same status the optional `code-review-gate` skill (Step 10b) uses.
 
-```
-# Get available transitions
-mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-
-# Transition to Human Code Review (pick the matching transition id) — NOT Done
-mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<human-code-review-id>" })
-```
+`tracker.set-phase <id> human-review` — NOT `done`.
 
 ### 5. Tear down the worktree
 
@@ -70,6 +58,7 @@ WORKTREE_PATH="$(git rev-parse --show-toplevel)"
 cd "$MAIN_REPO"
 git worktree remove "$WORKTREE_PATH" --force
 git worktree prune
+rm -f "$MAIN_REPO/.claude/worktrees/<branch>.state.json"   # workflow checkpoint — task is complete
 ```
 
 ### 6. Emit completion

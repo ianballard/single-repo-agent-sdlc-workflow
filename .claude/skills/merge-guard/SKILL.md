@@ -17,13 +17,11 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 
    If the result is `main`, `master`, `develop`, or `staging`, emit `WORKFLOW_BLOCKED: workflow running on <branch> branch — feature branch required` and stop.
 
-2. **Read the declared scope from JIRA** — find the `## [MODIFIED FILES]` comment:
+2. **Read the declared scope** — the scope is what was *planned*, never what was *changed* (comparing the diff against a list derived from the same diff proves nothing):
 
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
-
-   Scan the comments for one starting with `## [MODIFIED FILES]`. Parse the file list from it (one file per line, prefixed with `- `).
+   - `tracker.read-comments <id> [PLAN]` — parse the `### Files in scope` section (one file or glob per line, prefixed with `- `).
+   - `tracker.read-comments <id> [SCOPE CHANGE]` — collect the additional declared files from every such comment.
+   - The declared scope is the union of both. Ignore the `## [MODIFIED FILES]` comment — it is a historical record written from the diff itself.
 
 3. **Derive the diff base**:
 
@@ -60,14 +58,7 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    - Emit `MERGE_GUARD_PASSED: all changes within task scope` and continue to the next step in the workflow — do not stop.
 
    If out-of-scope files are found:
-   - Add the blocked output to JIRA as a comment:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nWORKFLOW_BLOCKED: scope creep detected — files outside task scope:\n- <file1>\n- <file2>"
-   )
-   ```
+   - Add the blocked output: `tracker.comment <id> [NOTES] "WORKFLOW_BLOCKED: scope creep detected — files outside task scope:\n- <file1>\n- <file2>"`
    - Emit `WORKFLOW_BLOCKED: scope creep detected — <out-of-scope files>` and stop.
 
 ## Rules
@@ -75,4 +66,5 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 - Always run from the workspace root
 - Never skip this step — it is the last safety check before code leaves this repo
 - Do not attempt to resolve scope issues manually; surface them and stop
-- If no `## [MODIFIED FILES]` comment exists in JIRA, treat scope as unrestricted (no files are flagged as out-of-scope) and emit `MERGE_GUARD_PASSED: no scope declared`
+- If the `## [PLAN]` comment has no `### Files in scope` section (legacy task planned before scope declaration existed), scope cannot be enforced — emit `MERGE_GUARD_PASSED: no planned scope declared (legacy task — scope not enforced)` and continue
+- A trailing `/*` or `/**` on a declared directory (e.g. `frontend/src/auth/*`) matches files at any depth beneath that directory (recursive), not just direct children

@@ -7,24 +7,11 @@ You are the code review gate agent. This skill is only invoked when the user has
 
 ## Process
 
-1. **Transition the JIRA issue to "Human Code Review" status**:
+1. **Move the issue to `human-review` phase**: `tracker.set-phase <id> human-review`
 
-   ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<human-code-review-id>" })
-   ```
+2. **Add a comment indicating human code review is needed**: `tracker.comment <id> [NOTES] "Awaiting human code review. Implementation must be reviewed before closeout."`
 
-2. **Add a comment indicating human code review is needed**:
-
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nAwaiting human code review. Implementation must be reviewed before closeout."
-   )
-   ```
-
-3. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+3. Follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label.
 
 4. Emit `WORKFLOW_BLOCKED: human code review required for task <id> — implementation must be reviewed before closeout` and stop.
 
@@ -32,5 +19,5 @@ The human reviews the code (the branch is pushed so the diff is visible in GitHu
 
 ## Rules
 
-- Always commit before stopping — pending changes must not be lost
+- Always follow the Blocked exit protocol before stopping — pending changes must not be lost
 - This skill always emits `WORKFLOW_BLOCKED` — it never continues the workflow
