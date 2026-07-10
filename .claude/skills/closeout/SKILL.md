@@ -1,9 +1,9 @@
 ---
 name: closeout
-description: Commit all pending changes, squash and push the feature branch, mark the task Done, and tear down the worktree
+description: Commit all pending changes, squash and push the feature branch, open a GitHub PR, move the JIRA task to Human Code Review, and tear down the worktree
 ---
 
-You are the closeout agent. Your job is to finalize the task: produce one clean commit, push the feature branch, mark the backlog task Done, and clean up the worktree. Only run after the merge guard (Step 12) has passed.
+You are the closeout agent. Your job is to finalize the task: produce one clean commit, push the feature branch, open a GitHub pull request, move the JIRA issue to Human Code Review, and clean up the worktree. Only run after the merge guard (Step 12) has passed. Closeout never marks the task Done itself — a human reviews the pushed PR and moves the issue to Done afterward.
 
 All operations through step 4 run from `<worktree>` as the working root. Step 5 (worktree teardown) switches to the main repo.
 
@@ -11,37 +11,42 @@ All operations through step 4 run from `<worktree>` as the working root. Step 5 
 
 ### 1. Commit all pending changes
 
-Use the `commit` skill from the worktree root. This produces one conventional commit to the feature branch containing every change accumulated since intake: code, tests, backlog updates, plan, notes, AC checks, and review notes.
+Use the `commit` skill from the worktree root. This produces one conventional commit to the feature branch containing every change accumulated since intake: code, tests, and any local file updates.
 
 ### 2. Squash and push
+
+First determine `<base>` — the branch the feature branch was cut from. Read it via `tracker.read-comments <id> [BRANCH]` and take the `Base:` line. If the comment has no `Base:` line (older tasks), fall back to the repo default branch (`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`, or `develop`).
 
 From `<worktree>`:
 
 ```bash
-bash .claude/skills/workflow/scripts/squash-and-push.sh <id> "feat(<scope>): <task title> (<task id>)"
+bash .claude/skills/workflow/scripts/squash-and-push.sh <id> "feat(<scope>): <task title> (<task id>)" <base>
 ```
 
 Choose the `<scope>` to reflect the primary area changed (e.g., `frontend`, `backend`, `frontend,backend`). Make the subject descriptive enough to stand alone in git log.
 
-The script squashes multiple commits into one if needed, then pushes the feature branch with `--force-with-lease` (or sets the upstream on first push).
+The script squashes all commits since `<base>` into one if needed, then pushes the feature branch with `--force-with-lease` (or sets the upstream on first push). Passing `<base>` matters: without it, a branch cut from anything other than `develop` would have its parent branch's commits folded into the task commit.
 
 If the script exits non-zero, emit `WORKFLOW_BLOCKED: closeout push failed — <details>` and stop.
 
-### 3. Mark the task done
+### 2b. Open the pull request
 
-From `<worktree>`:
+Use the `open-pr` skill from the worktree root, passing `<base>` from step 2 so the PR targets the branch the work was cut from. It opens a GitHub PR for `<branch>` against `<base>` via the `gh` CLI (or re-emits the URL of an already-open PR).
 
-```bash
-cd backlog && backlog task edit <id> -s Done
-```
+- `PR_OPENED: <url>` — record the URL; it goes into the Final Summary comment in the next step.
+- `PR_BLOCKED` — emit `WORKFLOW_BLOCKED: closeout PR failed — <propagated reason>` and stop. Do not transition the task or tear down the worktree.
 
-### 4. Commit and push the final status change
+### 3. Add the Final Summary
 
-Use the `commit` skill once more for the Done status update, then push from `<worktree>`:
+`tracker.comment <id> [FINAL SUMMARY] "PR: <url>\n\n<PR-description-style summary of what was implemented>"`
 
-```bash
-git push
-```
+Write it like a reviewer will see it: what changed, why, user impact, tests run, and any risks or follow-ups. Include the PR URL from step 2b.
+
+### 4. Move the task to Human Code Review
+
+Closeout hands off to a human reviewer instead of marking the task Done — the same status the optional `code-review-gate` skill (Step 10b) uses.
+
+`tracker.set-phase <id> human-review` — NOT `done`.
 
 ### 5. Tear down the worktree
 
@@ -53,15 +58,18 @@ WORKTREE_PATH="$(git rev-parse --show-toplevel)"
 cd "$MAIN_REPO"
 git worktree remove "$WORKTREE_PATH" --force
 git worktree prune
+rm -f "$MAIN_REPO/.claude/worktrees/<branch>.state.json"   # workflow checkpoint — task is complete
 ```
 
 ### 6. Emit completion
 
-Emit `TASK_COMPLETE: <id> — <title>`
+Emit `TASK_COMPLETE: <id> — <title>` (status: Human Code Review — a human must move it to Done after reviewing the PR).
 
 ## Rules
 
 - Never push before committing — all working tree changes must be committed first
-- The task must be marked Done before tearing down the worktree
+- The PR must be opened (or confirmed already open) before the task is transitioned to Human Code Review
+- Closeout never transitions the task to Done — that is a human-only action taken after reviewing the PR
+- The task must be transitioned to Human Code Review in JIRA before tearing down the worktree
 - Worktree teardown must run from the main repo, not from inside the worktree
 - If any step fails before teardown, emit `WORKFLOW_BLOCKED: closeout failed — <details>` and stop — do not tear down the worktree so in-progress work is preserved for debugging

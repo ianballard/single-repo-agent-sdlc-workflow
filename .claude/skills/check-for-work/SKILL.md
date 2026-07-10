@@ -1,45 +1,34 @@
 ---
 name: check-for-work
-description: Check for available work in the backlog either by id or priority.
+description: Check for available work in the issue tracker either by issue key or priority.
 ---
 
-You are the work checker agent. Your job is to find and claim a task with an id that was provided or the highest priority available task from the backlog.
-
-## Running backlog commands
-
-Run all `backlog` CLI commands from inside the `backlog/` directory:
-
-```bash
-cd backlog
-```
+You are the work checker agent. Your job is to find and claim a task — either by a provided issue key or by selecting the highest-priority available issue.
 
 ## Process
 
-1. If a task ID is provided, check if the task exists:
+1. **`tracker.session-init`** (see the active adapter in `docs/agents/issue-tracker.md`) — one-time per run.
 
-```bash
-backlog task <id> --plain
-```
+2. **`tracker.find-work [key]`**:
+   - If a task ID/key was provided, this verifies it exists and is available — honoring the flagged/blocked check. If it is flagged or blocked by an unresolved issue, emit `CHECK_BLOCKED: <reason>` and stop — an explicitly requested task is never silently swapped for another one.
+   - If no task ID was provided, this returns the next claimable issue by priority (`Highest > High > Medium > Low > Lowest`, tie-broken by lowest numeric issue key), honoring the same flagged/blocked exclusion.
 
-2. If no task ID is provided, list all tasks in the backlog that are available for work:
-```bash
-backlog task list --status "To Do" --plain
-```
+3. **If no tasks are available** (or every candidate is flagged/blocked):
+   - Emit `NO_WORK_AVAILABLE` (or `NO_WORK_AVAILABLE: all candidates flagged or blocked — <issue-keys>`) and stop.
 
-3. If no tasks are available:
-   - Emit `NO_WORK_AVAILABLE` and stop
+4. **Claim the selected issue immediately** via **`tracker.assign <id> <current user>`** — this is the claim marker that closes the window where two sessions could pick the same available issue between selection and intake.
 
-4. If tasks are available:
-   - Select the highest-priority task. Backlog priorities are strings: `high`, `medium`, `low` (or unset). Order: `high > medium > low > unset`.
-   - If multiple tasks share the same priority, select the one with the **lowest numeric task ID**.
+   If the issue turns out to be already assigned to someone else at this point (race lost), skip it and return to step 2 to select the next candidate.
 
-5. Emit the task information:
-   - Emit `<task id> — <task title>` and continue on to the next step in the workflow (e.g., `intake`) - do not stop
+5. **Emit the task information**:
+   - Emit `<issue-key> — <summary>` and continue on to the next step in the workflow — do not stop.
 
 ## Rules
 
 - Always claim exactly one task
-- Priority order: `high > medium > low > unset` (string-based, not numeric)
-- Tie-break by lowest numeric task ID
-- Never skip tasks or cherry-pick based on content
-- If the backlog CLI is not available, output `CHECK_BLOCKED: backlog CLI not available` and stop
+- Priority order: `Highest > High > Medium > Low > Lowest`
+- Tie-break by lowest numeric issue key
+- Never cherry-pick based on content
+- Never claim a flagged issue or an issue blocked by an unresolved issue — skip it entirely rather than deprioritizing it
+- An explicitly requested task ID that is flagged or blocked is never silently substituted — emit `CHECK_BLOCKED` instead
+- If the issue tracker is not available, output `CHECK_BLOCKED: tracker not available` and stop

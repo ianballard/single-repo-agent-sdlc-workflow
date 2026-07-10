@@ -7,19 +7,17 @@ You are the intake gate agent. This skill is only invoked when the user has expl
 
 ## Process
 
-1. Update the task status to signal it is awaiting human review:
+1. **Move the issue to `intake-review` phase**: `tracker.set-phase <id> intake-review`
 
-```bash
-cd backlog && backlog task edit <id> -s "Intake Review" -a @human
-```
+2. **Add a comment indicating human review is needed**: `tracker.comment <id> [NOTES] "Awaiting human intake review. Task definition must be approved before planning begins."`
 
-2. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+3. Follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label.
 
-3. Emit `WORKFLOW_BLOCKED: intake review required for task <id> — task definition must be approved before planning begins` and stop.
+4. Emit `WORKFLOW_BLOCKED: intake review required for task <id> — task definition must be approved before planning begins` and stop.
 
-The human reviews the task definition offline. If changes are needed, they update the task directly. When ready, they re-invoke the workflow to resume from Step 4 (Plan the task).
+The human reviews the task definition in JIRA. If changes are needed, they update the issue directly. When ready, they re-invoke the workflow to resume from Step 4 (Plan the task).
 
 ## Rules
 
-- Always commit before stopping — pending changes must not be lost
+- Always follow the Blocked exit protocol before stopping — pending changes must not be lost
 - This skill always emits `WORKFLOW_BLOCKED` — it never continues the workflow

@@ -19,35 +19,23 @@ Review the plan on these dimensions:
 
 ## Process
 
-1. Read the task to understand the requirements and the plan:
+1. **Read the task** to understand the requirements and the plan: `tracker.read <id>`
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   Review the description (AC list) and the `## [PLAN]` comment.
 
-2. Independently review each acceptance criterion against the plan. For each one, answer: "Would following this plan definitely satisfy this criterion, or is there a way it could fail?"
+2. **Independently review each acceptance criterion against the plan.** For each one, answer: "Would following this plan definitely satisfy this criterion, or is there a way it could fail?"
 
-3. Produce a findings list. Categorize each finding:
+3. **Produce a findings list.** Categorize each finding:
    - **Blocking** — the plan cannot succeed as written; it must be revised before coding
    - **Warning** — a real risk the implementer should explicitly address during coding
    - **Minor** — a gap or ambiguity that is low risk but worth noting
 
-4. If there are **blocking** findings:
-   - Append the findings to the task:
-   ```bash
-   cd backlog && backlog task edit <id> \
-     --append-notes "HOSTILE PLAN REVIEW — BLOCKING ISSUES:" \
-     --append-notes "- <finding 1>" \
-     --append-notes "- <finding 2>"
-   ```
+4. **If there are blocking findings:**
+   - Append the findings: `tracker.comment <id> [NOTES] "HOSTILE PLAN REVIEW — BLOCKING ISSUES:\n- <finding 1>\n- <finding 2>"`
    - Emit `HOSTILE_REVIEW_BLOCKED: <count> blocking issue(s) found — <one-line summary>` and stop. The workflow will return to Step 4 to revise the plan.
 
-5. If there are **no blocking findings** (warnings and minors are acceptable):
-   - Append a brief summary:
-   ```bash
-   cd backlog && backlog task edit <id> \
-     --append-notes "HOSTILE PLAN REVIEW — PASSED (<count> warning(s), <count> minor(s))"
-   ```
+5. **If there are no blocking findings** (warnings and minors are acceptable):
+   - Append a brief summary: `tracker.comment <id> [NOTES] "HOSTILE PLAN REVIEW — PASSED (<count> warning(s), <count> minor(s))"`
    - Emit `HOSTILE_REVIEW_PASSED` and continue on to the next step in the workflow — do not stop.
 
 ## Rules

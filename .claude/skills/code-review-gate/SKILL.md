@@ -7,19 +7,17 @@ You are the code review gate agent. This skill is only invoked when the user has
 
 ## Process
 
-1. Update the task status to signal it is awaiting human code review:
+1. **Move the issue to `human-review` phase**: `tracker.set-phase <id> human-review`
 
-```bash
-cd backlog && backlog task edit <id> -s "Human Code Review" -a @human
-```
+2. **Add a comment indicating human code review is needed**: `tracker.comment <id> [NOTES] "Awaiting human code review. Implementation must be reviewed before closeout."`
 
-2. Use the `commit` skill to commit all pending changes. This is an exit path — there will be no closeout commit.
+3. Follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label.
 
-3. Emit `WORKFLOW_BLOCKED: human code review required for task <id> — implementation must be reviewed before closeout` and stop.
+4. Emit `WORKFLOW_BLOCKED: human code review required for task <id> — implementation must be reviewed before closeout` and stop.
 
-The human reviews the code (the branch is pushed so the diff is visible). If changes are needed, they can be made directly and the workflow re-invoked to resume from Step 12 (Merge Guard). If no changes are needed, resume from Step 13 (Closeout).
+The human reviews the code (the branch is pushed so the diff is visible in GitHub/GitLab). If changes are needed, they can be made directly and the workflow re-invoked to resume from Step 12 (Merge Guard). If no changes are needed, resume from Step 13 (Closeout).
 
 ## Rules
 
-- Always commit before stopping — pending changes must not be lost
+- Always follow the Blocked exit protocol before stopping — pending changes must not be lost
 - This skill always emits `WORKFLOW_BLOCKED` — it never continues the workflow

@@ -6,7 +6,12 @@
 # commit using the provided subject, then pushes with --force-with-lease.
 #
 # Usage:
-#   .claude/skills/workflow/scripts/squash-and-push.sh <task-id> "<conventional-commit-subject>"
+#   .claude/skills/workflow/scripts/squash-and-push.sh <task-id> "<conventional-commit-subject>" [base-branch]
+#
+# [base-branch] is the branch the feature branch was cut from (recorded by the
+# intake skill). Without it, a branch cut from anything other than develop
+# gets squashed against origin/develop, folding the parent branch's own
+# commits into the task commit.
 #
 # Exit codes:
 #   0  Squashed (or nothing to squash) and pushed successfully.
@@ -18,21 +23,34 @@
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-  echo "usage: squash-and-push.sh <task-id> \"<conventional-commit-subject>\"" >&2
+  echo "usage: squash-and-push.sh <task-id> \"<conventional-commit-subject>\" [base-branch]" >&2
   exit 3
 fi
 
 task_id="$1"
 commit_subject="$2"
+base_branch="${3:-}"
 current_branch="$(git branch --show-current)"
 
-# Derive the diff base.
-base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
-if [ -z "$base" ]; then
-  if git rev-parse --verify origin/main >/dev/null 2>&1; then
-    base="origin/main"
+# Derive the diff base: explicit base branch wins, then upstream, then develop.
+base=""
+if [ -n "$base_branch" ]; then
+  if git rev-parse --verify "origin/$base_branch" >/dev/null 2>&1; then
+    base="origin/$base_branch"
+  elif git rev-parse --verify "$base_branch" >/dev/null 2>&1; then
+    base="$base_branch"
   else
-    base="main"
+    echo "warning: base branch '$base_branch' not found, falling back" >&2
+  fi
+fi
+if [ -z "$base" ]; then
+  base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+fi
+if [ -z "$base" ]; then
+  if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+    base="origin/develop"
+  else
+    base="develop"
   fi
 fi
 
@@ -46,7 +64,10 @@ else
   elif [ "$ahead" -gt 1 ]; then
     squash_msg="$(git log --format='%s%n%n%b' "$base..HEAD" --reverse)"
     git reset --soft "$(git merge-base "$base" HEAD)"
-    git commit -m "$commit_subject" -m "$squash_msg"
+    # --allow-empty: if the branch's changes net to nothing, the soft-reset
+    # leaves an empty index; without this the commit (and the whole closeout)
+    # would hard-fail after history has already been collapsed.
+    git commit --allow-empty -m "$commit_subject" -m "$squash_msg"
     echo "Squashed $ahead commits into one"
   else
     echo "1 commit ahead of $base — nothing to squash"

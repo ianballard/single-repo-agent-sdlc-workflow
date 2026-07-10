@@ -12,30 +12,28 @@ From the workspace root:
 ```bash
 base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [ -z "$base" ]; then
-  if git rev-parse --verify origin/main >/dev/null 2>&1; then
-    base="origin/main"
+  if git rev-parse --verify origin/develop >/dev/null 2>&1; then
+    base="origin/develop"
   else
-    base="main"
+    base="develop"
   fi
 fi
 ```
 
 ## Process
 
-1. Review the changes made on the current branch:
+1. **Review the changes made on the current branch**:
 
-```bash
-git diff "$base"...HEAD --stat
-git log "$base"..HEAD --oneline
-```
+   ```bash
+   git diff "$base"...HEAD --stat
+   git log "$base"..HEAD --oneline
+   ```
 
-2. Review the task details to understand the original requirements:
+2. **Review the task details** to understand the original requirements: `tracker.read <id>`
 
-```bash
-cd backlog && backlog task <id> --plain
-```
+   Review the description (AC list) and existing comments (plan, any prior notes).
 
-3. Write implementation notes that include:
+3. **Write implementation notes** that include:
 
    **What was implemented:**
    - Summary of the changes made
@@ -62,14 +60,12 @@ cd backlog && backlog task <id> --plain
    - Potential improvements or optimizations
    - Related work that may be needed
 
-4. Append the implementation notes to the task:
+4. **Append the implementation notes**: `tracker.comment <id> [NOTES] "<implementation notes>"`
 
-```bash
-cd backlog && backlog task edit <id> --append-notes "<implementation notes>"
-```
+5. **Also record the modified files** (a historical record for reviewers; the merge guard enforces the plan's `### Files in scope`, not this list): `tracker.comment <id> [MODIFIED FILES] "<list of files from git diff --stat>"`
 
-5. Emit completion:
-   - Emit `IMPLEMENTATION_NOTES_COMPLETE: notes added to task <id>` and continue on to the next step in the workflow - do not stop.
+6. **Emit completion**:
+   - Emit `IMPLEMENTATION_NOTES_COMPLETE: notes added to task <id>` and continue on to the next step in the workflow — do not stop.
 
 ## Rules
 

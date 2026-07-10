@@ -5,7 +5,7 @@ description: Commit all changes with a well-formatted commit message following c
 
 Your job is to commit all pending changes with a clear, descriptive commit message.
 
-This is a mono-repo. All changes across `frontend/`, `backend/`, `e2e/`, and `backlog/` are committed as a single git commit.
+This is a mono-repo. All changes across `frontend/`, `backend/`, and `e2e/` are committed as a single git commit. JIRA task state is tracked in JIRA (not in git), so there is no `backlog/` directory to commit.
 
 **Working root:** During an active workflow, commits are made from the worktree root (`<worktree>`), not the main repo checkout. The worktree is a complete checkout of the feature branch — running `git commit` there commits directly to the feature branch. If no worktree is active (e.g., a manual one-off commit outside the workflow), commit from the repo root as normal.
 
@@ -20,11 +20,7 @@ git diff --stat
 
 2. **Skip if there is nothing to commit** — emit `COMMIT_NOOP: no changes to commit` and continue.
 
-3. Review the task details to understand what was implemented:
-
-```bash
-cd backlog && backlog task <id> --plain
-```
+3. Review the task details to understand what was implemented: `tracker.read <id>`
 
 4. Stage only the changes belonging to this task. Prefer explicit paths over `git add .`:
 
@@ -34,7 +30,7 @@ git add <files modified by this task>
 
 If the change set is clearly scoped to the task, `git add -A` is acceptable, but never include `.env`, credentials, or build artifacts that should be gitignored.
 
-5. Create a commit message following conventional commits format. The `<scope>` should reflect the primary area changed (`frontend`, `backend`, `e2e`, `backlog`, or a compound like `frontend,backend` for cross-cutting changes):
+5. Create a commit message following conventional commits format. The `<scope>` should reflect the primary area changed (`frontend`, `backend`, `e2e`, or a compound like `frontend,backend` for cross-cutting changes):
 
 ```
 <type>(<scope>): <subject>

@@ -90,9 +90,10 @@ The e2e project lives at `e2e/` in the workspace root.
 ## Special Cases
 
 If e2e tests require infrastructure that's not available (databases, external services):
-- Document the required infrastructure
+- **Prove it — never skip on assumption.** Actually run the test command and capture the failing output. "Probably needs a database" is not evidence; a connection-refused error is.
+- Post the evidence: `tracker.comment <id> [NOTES] "E2E SKIPPED — infrastructure unavailable:\n\nCommand: <exact command run>\nError: <captured error output>"`
 - Emit `E2E_TESTS_SKIPPED: required infrastructure not available — <details>` and continue on to the next step in the workflow - do not stop.
-- This is not a blocker; the workflow can continue
+- This is not a blocker; the workflow can continue. The audit (Step 11) fails a skip that has no evidence comment.
 
 If this is the first time setting up e2e tests:
 - Follow step 2 to install and configure Playwright
@@ -112,6 +113,20 @@ If the e2e project already has a `playwright.config.ts`, verify it has these req
 - `trace: 'on'` — record traces for debugging
 - `screenshot: 'on'` — take screenshots throughout test execution
 - `outputDir: './test-results'` — relative to the e2e/ directory
+- `webServer` is an **array with two entries** — Playwright starts both servers itself; never start the backend or frontend manually before running tests:
+  1. Backend: `.venv/bin/python -m uvicorn app.main:app --port ${BACKEND_PORT}` with `cwd: '../backend'`, readiness URL `/docs`, and `reuseExistingServer: false` so a stale process on the port fails loudly instead of being mistaken for our backend
+  2. Frontend: `npm --prefix ../frontend run dev`, with `env: { API_PROXY_TARGET: 'http://localhost:${BACKEND_PORT}' }` so the Vite dev proxy points at the backend Playwright started
+
+### Backend port conflicts
+
+The backend port defaults to 8000 and is overridable via `E2E_BACKEND_PORT`. If the test run fails because the port is already in use, do NOT hunt down or kill the occupying process — re-run with a different port:
+
+```bash
+cd e2e
+E2E_BACKEND_PORT=8001 npx playwright test
+```
+
+The config threads the port through to both the uvicorn command and the frontend's `API_PROXY_TARGET`, so no other change is needed.
 
 ## E2E Test Creation Guidelines
 
