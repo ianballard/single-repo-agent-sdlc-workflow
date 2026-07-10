@@ -29,7 +29,7 @@ if [ "$CURRENT" = "<branch>" ]; then
 fi
 ```
 
-The intake skill commits the backlog task change before emitting `INTAKE_COMPLETE`, so this checkout is always clean (no uncommitted edits to carry over).
+Intake makes no local file edits (all task state lives in JIRA, and commits are deferred to closeout), so this checkout is clean — there are no uncommitted edits to carry over.
 
 4. Create the worktree for the feature branch:
 
@@ -65,7 +65,7 @@ If any install fails, emit `WORKTREE_BLOCKED: bootstrap failed — <error summar
 
 ## What the worktree contains
 
-The worktree is a complete checkout of the feature branch at the moment of creation. Every directory and file in the repo is present: `frontend/`, `backend/`, `e2e/`, `backlog/`, `.claude/`, scripts — everything. All subsequent workflow steps operate from this worktree root as if it were the main workspace.
+The worktree is a complete checkout of the feature branch at the moment of creation. Every directory and file in the repo is present: `frontend/`, `backend/`, `e2e/`, `.claude/`, scripts — everything. All subsequent workflow steps operate from this worktree root as if it were the main workspace.
 
 ## Rules
 
