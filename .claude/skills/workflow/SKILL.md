@@ -18,7 +18,7 @@ There must always be an associated JIRA issue with any implementation. If one do
 After Steps 1–2b, you must hold these bindings for the rest of the workflow. If any becomes unset, re-derive it before continuing.
 
 - `<cloudId>` — the Atlassian cloud ID discovered in Step 1 (via `getAccessibleAtlassianResources`); every JIRA MCP call in every step requires it — reuse it rather than re-fetching
-- `<id>` — the task ID claimed in Step 1 (e.g., `task-3`)
+- `<id>` — the JIRA issue key claimed in Step 1 (e.g., `KAN-42`)
 - `<title>` — the task title from Step 1
 - `<branch>` — the feature branch name captured from `INTAKE_COMPLETE` in Step 2
 - `<worktree>` — the absolute worktree path captured from `WORKTREE_READY` in Step 2b
@@ -61,6 +61,8 @@ Capture `<branch>` from the emitted `INTAKE_COMPLETE: <branch>`.
 Use the `setup-worktree` skill.
 
 Capture `<worktree>` from the emitted `WORKTREE_READY: <worktree>`. All subsequent steps run from `<worktree>` as the working root.
+
+If `WORKTREE_BLOCKED` is emitted (bootstrap failure), propagate as `WORKFLOW_BLOCKED: <propagated reason>` and stop.
 
 ## Step 3: Assess task definition
 

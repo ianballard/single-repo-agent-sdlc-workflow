@@ -42,7 +42,7 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **self-improvement** - Reflects on execution and emits process improvement recommendations
 - **merge-guard** - Verifies branch changes are within the task's declared scope
 - **open-pr** - Opens a GitHub pull request for the pushed feature branch via the `gh` CLI (invoked by closeout)
-- **closeout** - Commits, squashes, pushes, opens the PR, and marks the task Done
+- **closeout** - Commits, squashes, pushes, opens the PR, and moves the task to Human Code Review
 - **commit** - Creates conventional commit messages
 - **manage-backlog-tasks** - Documents all JIRA MCP operations used by the workflow
 
@@ -62,7 +62,7 @@ The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL
 
 ## Working with the Workflow
 
-When the user says "coordinate a task" or wants full SDLC automation, invoke the `workflow` skill. It will handle the entire lifecycle autonomously. The workflow operates on one task at a time and requires a feature branch (blocks if on main/master/develop/staging).
+When the user says "coordinate a task" or wants full SDLC automation, invoke the `workflow` skill. It will handle the entire lifecycle autonomously. The workflow operates on one task at a time. Intake starts from the base branch (`develop`) and cuts the feature branch itself; from the worktree onward every step runs on that feature branch, and the merge guard refuses to run on main/master/develop/staging.
 
 The default/base branch that feature branches are cut from (and diffed, reviewed, and PR'd against, absent an explicit `Base:` override recorded at intake) is `develop`.
 
