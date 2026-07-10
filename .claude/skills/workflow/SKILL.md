@@ -11,14 +11,14 @@ This workflow runs autonomously. The `manage-backlog-tasks` skill contains gener
 
 ## Task Rule
 
-There must always be an associated JIRA issue with any implementation. If one does not exist yet, create one in JIRA with just the details that you already have (use `mcp__plugin_atlassian_atlassian__createJiraIssue(cloudId: "<cloudId>", ...)`).
+There must always be an associated tracker issue with any implementation. If one does not exist yet, create one with just the details that you already have (`tracker.create {summary, description, type, priority}`).
 
 ## Variable bindings (used throughout)
 
 After Steps 1–2b, you must hold these bindings for the rest of the workflow. If any becomes unset, re-derive it before continuing.
 
-- `<cloudId>` — the Atlassian cloud ID discovered in Step 1 (via `getAccessibleAtlassianResources`); every JIRA MCP call in every step requires it — reuse it rather than re-fetching
-- `<id>` — the JIRA issue key claimed in Step 1 (e.g., `KAN-42`)
+- `<cloudId>` — tracker session handle established by `tracker.session-init` in Step 1 (JIRA-specific; other adapters may not need it). Reuse for the run.
+- `<id>` — the tracker issue key claimed in Step 1 (e.g., `KAN-42`)
 - `<title>` — the task title from Step 1
 - `<branch>` — the feature branch name captured from `INTAKE_COMPLETE` in Step 2
 - `<worktree>` — the absolute worktree path captured from `WORKTREE_READY` in Step 2b
@@ -68,22 +68,8 @@ Every early stop (`WORKFLOW_BLOCKED` for any reason) after intake has created th
 
 1. **Commit** pending changes with the `commit` skill (skip if the working tree is clean).
 2. **Push** so work is recoverable off this machine: `git push -u origin <branch>`.
-3. **Comment** on the JIRA issue:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [BLOCKED]\n\nWORKFLOW_BLOCKED at Step <n>: <reason>\n\nBranch: <branch>\nWorktree: <worktree>\nCheckpoint: .claude/worktrees/<branch>.state.json\n\nResume: re-run the workflow — it resumes from the checkpoint."
-   )
-   ```
-4. **Label** the issue so humans can find stalled work: fetch current labels from the issue, then
-   ```
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     fields: { labels: [<existing labels>, "workflow-blocked"] }
-   )
-   ```
+3. **Comment**: `tracker.comment <id> [BLOCKED] "WORKFLOW_BLOCKED at Step <n>: <reason>\n\nBranch: <branch>\nWorktree: <worktree>\nCheckpoint: .claude/worktrees/<branch>.state.json\n\nResume: re-run the workflow — it resumes from the checkpoint."`
+4. **Label** the issue so humans can find stalled work: `tracker.set-labels <id> add workflow-blocked`
 5. **Keep** the worktree and checkpoint file in place — they are the resume material. Do not tear down.
 6. **Emit** `WORKFLOW_BLOCKED: <reason>` and stop.
 
@@ -230,7 +216,7 @@ If `WORKFLOW_BLOCKED`, propagate and stop.
 ## Rules
 
 - Process exactly one task per invocation
-- All task reads and writes go through JIRA MCP tools via the `manage-backlog-tasks` skill — never bypass with direct API calls or file edits
+- All task reads and writes go through the tracker contract verbs (`docs/agents/issue-tracker.md`) via the `manage-backlog-tasks` skill's active adapter — never bypass with direct API calls or file edits
 - Single session only: do not run two workflow sessions simultaneously
 - If stuck and cannot proceed, output `WORKFLOW_BLOCKED: <reason>` so the loop exits cleanly
 - Propagate any `*_BLOCKED` output from sub-skills as `WORKFLOW_BLOCKED: <propagated reason>`

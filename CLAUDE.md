@@ -12,7 +12,7 @@ All commits and branches live in this single git repo. Never reference a separat
 
 ## Task Management
 
-Tasks are managed in **JIRA** via the `mcp__plugin_atlassian_atlassian__*` MCP tools. The `manage-backlog-tasks` skill documents all JIRA operations used by this workflow. Task IDs are JIRA issue keys (e.g., `PROJ-42`).
+Tasks are managed through the tracker-agnostic contract in `docs/agents/issue-tracker.md` (capability verbs, workflow-phase vocabulary, comment-marker schema), implemented by the `manage-backlog-tasks` skill's per-tracker adapters. **JIRA is the active adapter** — task IDs are JIRA issue keys (e.g., `PROJ-42`) today, but the tracker is swappable: see the contract's "Switching trackers" section.
 
 ## SDLC Workflow System
 
@@ -44,14 +44,14 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **open-pr** - Opens a GitHub pull request for the pushed feature branch via the `gh` CLI (invoked by closeout)
 - **closeout** - Commits, squashes, pushes, opens the PR, and moves the task to Human Code Review
 - **commit** - Creates conventional commit messages
-- **manage-backlog-tasks** - Documents all JIRA MCP operations used by the workflow
+- **manage-backlog-tasks** - Implements the issue-tracker contract; holds per-tracker adapters
 
 The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL.md`):
 1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Human plan review (required) → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 8b. Lint & format → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, move to Human Code Review, tear down worktree)
 
 **Key workflow behaviors:**
-- All task reads and writes use JIRA MCP tools via the `manage-backlog-tasks` skill
-- JIRA issue key is the `<id>` throughout the workflow (e.g., `PROJ-42`)
+- All task reads and writes use the tracker contract verbs via the `manage-backlog-tasks` skill's active adapter
+- The tracker issue key is the `<id>` throughout the workflow (e.g., `PROJ-42` under the current JIRA adapter)
 - JIRA status lifecycle: `To Do → Intake → Plan → Code → AI Code Review → Human Code Review → Done` (optional earlier gate: `Intake Review`; `Plan Review` is the status used by the required plan gate). `Human Code Review` is also closeout's mandatory hand-off state — `Done` is always a human-only transition, made after reviewing the PR
 - Uses gitflow branch naming: `feature/<issue-key>-description`, `fix/<issue-key>-description`, etc.
 - Commits at closeout only (not between steps) — all changes accumulate in worktree
@@ -88,7 +88,7 @@ These rules are policy, and are also mechanically enforced as `deny`/`ask` permi
 
 ### Issue tracker
 
-Issues are tracked in JIRA via the Atlassian MCP tools (issue keys like `KAN-42`). See `docs/agents/issue-tracker.md`.
+Issues are tracked via the tracker contract (issue keys like `KAN-42` under the current JIRA adapter). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

@@ -20,11 +20,7 @@ git diff --stat
 
 2. **Skip if there is nothing to commit** — emit `COMMIT_NOOP: no changes to commit` and continue.
 
-3. Review the task details to understand what was implemented:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+3. Review the task details to understand what was implemented: `tracker.read <id>`
 
 4. Stage only the changes belonging to this task. Prefer explicit paths over `git add .`:
 
