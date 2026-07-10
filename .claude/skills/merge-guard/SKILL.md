@@ -17,14 +17,10 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
 
    If the result is `main`, `master`, `develop`, or `staging`, emit `WORKFLOW_BLOCKED: workflow running on <branch> branch — feature branch required` and stop.
 
-2. **Read the declared scope from JIRA** — the scope is what was *planned*, never what was *changed* (comparing the diff against a list derived from the same diff proves nothing):
+2. **Read the declared scope** — the scope is what was *planned*, never what was *changed* (comparing the diff against a list derived from the same diff proves nothing):
 
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
-
-   - From the `## [PLAN]` comment, parse the `### Files in scope` section (one file or glob per line, prefixed with `- `).
-   - From every `## [SCOPE CHANGE]` comment, collect the additional declared files.
+   - `tracker.read-comments <id> [PLAN]` — parse the `### Files in scope` section (one file or glob per line, prefixed with `- `).
+   - `tracker.read-comments <id> [SCOPE CHANGE]` — collect the additional declared files from every such comment.
    - The declared scope is the union of both. Ignore the `## [MODIFIED FILES]` comment — it is a historical record written from the diff itself.
 
 3. **Derive the diff base**:
@@ -62,14 +58,7 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    - Emit `MERGE_GUARD_PASSED: all changes within task scope` and continue to the next step in the workflow — do not stop.
 
    If out-of-scope files are found:
-   - Add the blocked output to JIRA as a comment:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nWORKFLOW_BLOCKED: scope creep detected — files outside task scope:\n- <file1>\n- <file2>"
-   )
-   ```
+   - Add the blocked output: `tracker.comment <id> [NOTES] "WORKFLOW_BLOCKED: scope creep detected — files outside task scope:\n- <file1>\n- <file2>"`
    - Emit `WORKFLOW_BLOCKED: scope creep detected — <out-of-scope files>` and stop.
 
 ## Rules

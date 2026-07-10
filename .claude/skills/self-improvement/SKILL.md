@@ -17,11 +17,7 @@ Do not manufacture recommendations. If the workflow ran smoothly and nothing sta
 
 ## Process
 
-1. **Read the completed task** to review what happened during execution:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+1. **Read the completed task** to review what happened during execution: `tracker.read <id>`
 
    Review the task description, labels, and all comments (plan, notes, code review findings, etc.).
 
@@ -33,14 +29,7 @@ Do not manufacture recommendations. If the workflow ran smoothly and nothing sta
    - Did any skill's instructions turn out to be ambiguous or incomplete?
 
 3. **If a meaningful recommendation is identified:**
-   - Write it to the task as a JIRA comment:
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nSELF-IMPROVEMENT: <specific recommendation>"
-   )
-   ```
+   - Write it to the task: `tracker.comment <id> [NOTES] "SELF-IMPROVEMENT: <specific recommendation>"`
    - Follow the Blocked exit protocol (see `.claude/skills/workflow/SKILL.md`): commit, push, post a `## [BLOCKED]` comment, add the `workflow-blocked` label.
    - Emit `SELF_IMPROVEMENT_REVIEW_REQUIRED: task <id> — <recommendation summary>` and stop. A human must approve the recommendation before the workflow continues to closeout.
 
