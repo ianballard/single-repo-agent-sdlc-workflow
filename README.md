@@ -26,8 +26,7 @@ Task tracking is external, not a directory in this repo. The agent speaks a trac
    ```
    If you're activating the `backlog.md` adapter instead of JIRA, also create and initialize a local task store:
    ```bash
-   mkdir -p backlog
-   cd backlog && backlog init && cd ..
+  backlog init
    ```
 
 3. Set up the active issue tracker (JIRA by default): connect the Atlassian MCP plugin and make sure the project has these workflow statuses:

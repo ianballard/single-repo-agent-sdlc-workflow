@@ -1,6 +1,28 @@
-# Backlog.md adapter (legacy, example)
+# Backlog.md adapter
 
-Realization of every `docs/agents/issue-tracker.md` contract verb via the Backlog.md CLI (`backlog`). This was the active adapter before the project migrated to JIRA — preserved here so the contract remains provably swappable and so `backlog/CLAUDE.md`'s conventions aren't lost. Not wired live — `manage-backlog-tasks/SKILL.md` points at the `jira` adapter.
+Realization of every `docs/agents/issue-tracker.md` contract verb via the Backlog.md CLI (`backlog`).
+
+<!-- BACKLOG.MD GUIDELINES START -->
+<CRITICAL_INSTRUCTION>
+
+## Backlog.md Workflow
+
+**For every user request in this project regarding task management, run `backlog instructions overview` before answering or taking action.**
+
+Use the overview to decide whether to search, read, create, or update Backlog tasks.
+
+Use the detailed guides when needed:
+- `backlog instructions task-creation` for creating or splitting tasks
+- `backlog instructions task-execution` for planning and implementation workflow
+- `backlog instructions task-finalization` for completion and handoff
+
+Use `backlog <command> --help` before running unfamiliar commands. Help shows options, fields, and examples.
+
+Do not edit Backlog task, draft, document, decision, or milestone markdown files directly. Use the `backlog` CLI so metadata, relationships, and history stay consistent.
+
+</CRITICAL_INSTRUCTION>
+<!-- BACKLOG.MD GUIDELINES END -->
+
 
 **Storage model:** tasks are markdown files under `backlog/tasks/task-<id> - <title>.md`, mutated only through the CLI (never edit the files directly — see `backlog/CLAUDE.md`). `--plain` gives AI-parseable text output on every read command.
 

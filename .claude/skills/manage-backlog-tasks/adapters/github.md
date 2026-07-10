@@ -1,6 +1,6 @@
-# GitHub adapter (example)
+# GitHub adapter
 
-Example realization of every `docs/agents/issue-tracker.md` contract verb via the `gh` CLI. Not wired live — `manage-backlog-tasks/SKILL.md` still points at the `jira` adapter. This file exists to prove the contract is genuinely tracker-neutral: every verb below maps cleanly to `gh`.
+Realization of every `docs/agents/issue-tracker.md` contract verb via the `gh` CLI.
 
 **Phase-model note:** GitHub has no status state machine — workflow phases are modeled as mutually-exclusive `phase:*` labels, and `done` closes the issue. If you activate this adapter, update the phase→status mapping note in the contract accordingly.
 
