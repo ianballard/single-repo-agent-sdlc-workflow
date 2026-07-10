@@ -134,7 +134,7 @@ If `TASK_REFINEMENT_NEEDED`, follow the Blocked exit protocol, then emit `WORKFL
 
 **Skip by default.** Only invoke if the user explicitly requested an intake approval gate.
 
-Use the `intake-gate` skill. It commits pending changes and emits `WORKFLOW_BLOCKED` — propagate and stop.
+Use the `intake-gate` skill. It follows the Blocked exit protocol and emits `WORKFLOW_BLOCKED` — propagate and stop.
 
 ## Step 4: Plan the task
 
@@ -199,7 +199,7 @@ Apply the code review retry cap.
 
 **Skip by default.** Only invoke if the user explicitly requested a human code review gate.
 
-Use the `code-review-gate` skill. It commits pending changes and emits `WORKFLOW_BLOCKED` — propagate and stop.
+Use the `code-review-gate` skill. It follows the Blocked exit protocol and emits `WORKFLOW_BLOCKED` — propagate and stop.
 
 ## Step 11: Audit Followed All Steps
 
