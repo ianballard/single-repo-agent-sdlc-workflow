@@ -29,32 +29,14 @@ You are the intake agent. Your job is to start the development workflow for a cl
 
    `<base>` is the branch the feature branch is cut from. It is recorded in JIRA (step 4) and used at closeout as the squash diff base and the PR target. **On the reuse path**, `git branch --show-current` is not the base — read `<base>` from the `Base:` line of the existing `## [BRANCH]` JIRA comment instead, and skip step 4 (don't post a duplicate comment).
 
-3. **Transition the JIRA issue to "Intake"** and assign to current user:
+3. **Move the issue to `claimed` and assign to current user**:
 
-   ```
-   # Get available transitions
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   
-   # Transition to Intake
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<intake-id>" })
-   
-   # Assign to current user
-   mcp__plugin_atlassian_atlassian__editJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     fields: { assignee: { accountId: "<current-user-account-id>" } }   // use lookupJiraAccountId if needed
-   )
-   ```
+   `tracker.set-phase <id> claimed`
+   `tracker.assign <id> <current user>`
 
-4. **Record the branch in a JIRA comment**:
+4. **Record the branch**:
 
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [BRANCH]\n\n<branch>\n\nBase: <base>"
-   )
-   ```
+   `tracker.comment <id> [BRANCH] "<branch>\n\nBase: <base>"`
 
 5. **Emit completion**:
    - Emit `INTAKE_COMPLETE: <branch>` and continue to the next step in the workflow — do not stop.
