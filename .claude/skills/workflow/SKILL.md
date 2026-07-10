@@ -27,6 +27,33 @@ After Steps 1–2b, you must hold these bindings for the rest of the workflow. I
 
 **From Step 3 onward, all skills execute with `<worktree>` as their working root.** The worktree is a complete checkout of the feature branch — `frontend/`, `backend/`, `e2e/`, `.claude/`, and all scripts are present there. Script references (e.g., `bash .claude/skills/…`) all resolve correctly from within the worktree.
 
+## Checkpoint & resume
+
+The current step and retry counters live only in conversation context and do not survive a crash, compaction, or a fresh session. Persist them after every completed step.
+
+**Location:** `"$REPO_ROOT/.claude/worktrees/<branch>.state.json"` — a sibling of the worktree, inside the gitignored `.claude/worktrees/` directory and *outside* the worktree's working tree, so it can never be committed or flagged by the merge guard.
+
+**Write after every completed step from Step 2b onward** (and whenever a retry counter increments):
+
+```bash
+mkdir -p "$(dirname "$REPO_ROOT/.claude/worktrees/<branch>.state.json")"
+cat > "$REPO_ROOT/.claude/worktrees/<branch>.state.json" <<EOF
+{
+  "cloudId": "<cloudId>",
+  "id": "<id>",
+  "title": "<title>",
+  "branch": "<branch>",
+  "worktree": "<worktree>",
+  "lastCompletedStep": "<step, e.g. 8b>",
+  "counters": { "ac": 0, "unit": 0, "e2e": 0, "lint": 0, "codeReview": 0, "hostilePlan": 0, "returnsToStep5": 0 }
+}
+EOF
+```
+
+**Resume check (before Step 1):** run `find "$REPO_ROOT/.claude/worktrees" -name '*.state.json' 2>/dev/null`. If a checkpoint exists, read it and fetch its issue. If the issue is still assigned to this agent and not in `Human Code Review` or `Done`, restore all bindings and counters from the file and resume at the step after `lastCompletedStep` instead of claiming new work. If the issue has moved on, delete the stale checkpoint and proceed to Step 1 normally.
+
+**Cleanup:** closeout deletes the checkpoint during worktree teardown. Blocked exits keep it — it is the resume material.
+
 ## Commit discipline
 
 **Do not commit between steps.** Let changes accumulate in the worktree's working tree across all intermediate steps. Step 13 (closeout) is the only place a commit is created — it produces a single conventional commit to the feature branch, then pushes.

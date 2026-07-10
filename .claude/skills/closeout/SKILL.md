@@ -70,6 +70,7 @@ WORKTREE_PATH="$(git rev-parse --show-toplevel)"
 cd "$MAIN_REPO"
 git worktree remove "$WORKTREE_PATH" --force
 git worktree prune
+rm -f "$MAIN_REPO/.claude/worktrees/<branch>.state.json"   # workflow checkpoint — task is complete
 ```
 
 ### 6. Emit completion
