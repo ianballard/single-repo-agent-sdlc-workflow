@@ -6,18 +6,9 @@ description: Write a concrete, intent-driven implementation spec for the current
 You are the planning agent. Your job is to write a concrete implementation **spec** — not a vague sketch — for a task before any code is written. The spec must be specific enough that a different engineer (or agent) could implement it without re-deriving your decisions, and specific enough that AC verification and code review can be checked directly against it.
 ## Process
 
-1. **Transition the task to "Plan" status**:
+1. **Move the task to `planning` phase**: `tracker.set-phase <id> planning`
 
-   ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<plan-id>" })
-   ```
-
-2. **Read the task in full** to understand the problem, AC, and any references:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+2. **Read the task in full** to understand the problem, AC, and any references: `tracker.read <id>`
 
    Review: `summary`, `description` (description text + AC list), and all comments.
 
@@ -36,15 +27,7 @@ You are the planning agent. Your job is to write a concrete implementation **spe
 
    Be specific about intent and contracts, but stop short of writing the full implementation — describe behavior and signatures, not line-by-line code or pseudocode bodies.
 
-5. **Write the spec to JIRA as a comment**:
-
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [PLAN]\n\n<spec text>"
-   )
-   ```
+5. **Write the spec as a comment**: `tracker.comment <id> [PLAN] "<spec text, including the ### Files in scope section>"`
 
 6. **Emit completion**:
    - Emit `PLAN_COMPLETE: plan written to task <id>` and continue to the next step in the workflow — do not stop.
