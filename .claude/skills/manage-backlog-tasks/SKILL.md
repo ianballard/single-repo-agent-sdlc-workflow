@@ -277,10 +277,13 @@ editJiraIssue(issueIdOrKey: "PROJ-42", fields: { description: <updated descripti
 getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "AI Code Review" transition id
 transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
 
-# 10. Add final summary and mark done
+# 10. Add final summary and hand off for human review
 addCommentToJiraIssue(issueIdOrKey: "PROJ-42", commentBody: "## [FINAL SUMMARY]\n\nImplemented X using Y pattern. Updated files Z, W.")
-getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "Done" transition id
+getTransitionsForJiraIssue(issueIdOrKey: "PROJ-42") → find "Human Code Review" transition id
 transitionJiraIssue(issueIdOrKey: "PROJ-42", transition: { id: transitionId })
+
+# NOTE: the agent never transitions an issue to Done. A human reviews the
+# pushed PR and makes the Done transition themselves.
 ```
 
 ---
