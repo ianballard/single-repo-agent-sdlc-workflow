@@ -91,14 +91,7 @@ The e2e project lives at `e2e/` in the workspace root.
 
 If e2e tests require infrastructure that's not available (databases, external services):
 - **Prove it — never skip on assumption.** Actually run the test command and capture the failing output. "Probably needs a database" is not evidence; a connection-refused error is.
-- Post the evidence to JIRA:
-  ```
-  mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-    cloudId: "<cloudId>",
-    issueIdOrKey: "<id>",
-    commentBody: "## [NOTES]\n\nE2E SKIPPED — infrastructure unavailable:\n\nCommand: <exact command run>\nError: <captured error output>"
-  )
-  ```
+- Post the evidence: `tracker.comment <id> [NOTES] "E2E SKIPPED — infrastructure unavailable:\n\nCommand: <exact command run>\nError: <captured error output>"`
 - Emit `E2E_TESTS_SKIPPED: required infrastructure not available — <details>` and continue on to the next step in the workflow - do not stop.
 - This is not a blocker; the workflow can continue. The audit (Step 11) fails a skip that has no evidence comment.
 
