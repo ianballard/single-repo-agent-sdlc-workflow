@@ -7,18 +7,9 @@ You are the implementation agent. Your job is to write production-grade code tha
 
 ## Process
 
-1. **Transition the task to "Code" status**:
+1. **Move the task to `coding` phase**: `tracker.set-phase <id> coding`
 
-   ```
-   mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   mcp__plugin_atlassian_atlassian__transitionJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", transition: { id: "<code-id>" })
-   ```
-
-2. **Read the task to review the plan and acceptance criteria**:
-
-   ```
-   mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
-   ```
+2. **Read the task to review the plan and acceptance criteria**: `tracker.read <id>`
 
    Find the `## [PLAN]` comment for the implementation plan. Parse the description for the AC list.
 
@@ -29,25 +20,9 @@ You are the implementation agent. Your job is to write production-grade code tha
    - **Minimal scope** — implement only what the acceptance criteria require. Nothing more.
    - **Documentation** — update README.md or other relevant docs for any integration or architectural change.
 
-4. **If implementation reveals that the plan is incorrect or incomplete**, note the deviation:
+4. **If implementation reveals that the plan is incorrect or incomplete**, note the deviation: `tracker.comment <id> [NOTES] "Plan deviation: <what changed and why>"`
 
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [NOTES]\n\nPlan deviation: <what changed and why>"
-   )
-   ```
-
-4b. **If a file outside the plan's `### Files in scope` list must change**, declare it *at the moment you touch it* — the merge guard (Step 12) blocks undeclared out-of-scope files:
-
-   ```
-   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
-     cloudId: "<cloudId>",
-     issueIdOrKey: "<id>",
-     commentBody: "## [SCOPE CHANGE]\n\n- <file path> — <why this file must change to satisfy the ACs>"
-   )
-   ```
+4b. **If a file outside the plan's `### Files in scope` list must change**, declare it *at the moment you touch it* — the merge guard (Step 12) blocks undeclared out-of-scope files: `tracker.comment <id> [SCOPE CHANGE] "- <file path> — <why this file must change to satisfy the ACs>"`
 
    A scope change needs a reason traceable to an AC. "While I was in there" refactors are not scope changes — leave them out entirely.
 
