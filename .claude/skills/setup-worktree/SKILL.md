@@ -43,7 +43,7 @@ git worktree add "$WORKTREE_PATH" <branch>
 git worktree list
 ```
 
-6. Bootstrap gitignored build artifacts so subsequent steps have working toolchains. Run all three installs from the worktree root:
+6. Bootstrap gitignored build artifacts so subsequent steps have working toolchains. **Skip this step entirely for `docs/`-prefixed branches** — documentation-only tasks need no toolchains, and the installs are the most expensive part of setup. For all other branches, run all three installs from the worktree root:
 
 ```bash
 # Node dependencies — frontend
@@ -72,3 +72,4 @@ The worktree is a complete checkout of the feature branch at the moment of creat
 - The `.claude/worktrees/` directory is already in `.gitignore` — no additional configuration needed
 - Create a worktree only once per branch; if one already exists at the expected path, skip steps 2–5 and go straight to step 6 (bootstrap is idempotent — re-running `npm ci` / `pip install` on an existing install is safe and fast)
 - Never create the worktree for a branch that is already checked out in the main repo (git will refuse this — they must be on different branches)
+- If bootstrap was skipped (docs branch) and a later step turns out to need a toolchain (e.g., the task touches code after all), run the corresponding install from step 6 at that point — the installs are idempotent
