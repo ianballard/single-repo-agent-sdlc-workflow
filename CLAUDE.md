@@ -29,7 +29,7 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **intake-gate** - Optional human intake approval gate (Step 3b)
 - **plan-task** - Writes a thorough high-level implementation plan (stored as JIRA comment)
 - **hostile-plan-review** - Adversarially stress-tests the plan before coding begins
-- **plan-gate** - Optional human planning approval gate (Step 4b)
+- **plan-gate** - Required human planning approval gate (Step 4b)
 - **implement** - Writes production-grade code following the implementation plan
 - **verify-ac** - Verifies every acceptance criterion is met and marks them complete in JIRA description
 - **unit-tests** - Creates/updates and runs unit tests
@@ -47,12 +47,12 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **manage-backlog-tasks** - Documents all JIRA MCP operations used by the workflow
 
 The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL.md`):
-1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Optional human plan review → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 8b. Lint & format → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, move to Human Code Review, tear down worktree)
+1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Human plan review (required) → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 8b. Lint & format → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, move to Human Code Review, tear down worktree)
 
 **Key workflow behaviors:**
 - All task reads and writes use JIRA MCP tools via the `manage-backlog-tasks` skill
 - JIRA issue key is the `<id>` throughout the workflow (e.g., `PROJ-42`)
-- JIRA status lifecycle: `To Do → Intake → Plan → Code → AI Code Review → Human Code Review → Done` (optional earlier gates: `Intake Review`, `Plan Review`). `Human Code Review` is also closeout's mandatory hand-off state — `Done` is always a human-only transition, made after reviewing the PR
+- JIRA status lifecycle: `To Do → Intake → Plan → Code → AI Code Review → Human Code Review → Done` (optional earlier gate: `Intake Review`; `Plan Review` is the status used by the required plan gate). `Human Code Review` is also closeout's mandatory hand-off state — `Done` is always a human-only transition, made after reviewing the PR
 - Uses gitflow branch naming: `feature/<issue-key>-description`, `fix/<issue-key>-description`, etc.
 - Commits at closeout only (not between steps) — all changes accumulate in worktree
 - Merge guard (Step 12) runs **before** closeout hands off for human review — compares the **working tree** (uncommitted changes since base, since commits are deferred to Step 13) against the `## [MODIFIED FILES]` JIRA comment to detect scope creep

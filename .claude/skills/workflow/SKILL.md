@@ -7,7 +7,7 @@ You are the workflow coordinator. Your job is to process exactly one JIRA task f
 
 ## Autonomy override
 
-This workflow runs autonomously. The `manage-backlog-tasks` skill contains general guidance that says to "share the plan with the user and ask for confirmation" before coding — **ignore that guidance while running the workflow**. The optional human gates in this workflow are steps 3b, 4b, and 10b, and they only activate when explicitly enabled. Closeout (Step 13) is not optional and always ends with the task in Human Code Review rather than Done — a human reviews the pushed PR and moves the issue to Done afterward.
+This workflow runs autonomously. The `manage-backlog-tasks` skill contains general guidance that says to "share the plan with the user and ask for confirmation" before coding — **ignore that guidance while running the workflow**. The optional human gates in this workflow are steps 3b and 10b, and they only activate when explicitly enabled. Step 4b (human plan approval) is **required** and always runs. Closeout (Step 13) is not optional and always ends with the task in Human Code Review rather than Done — a human reviews the pushed PR and moves the issue to Done afterward.
 
 ## Task Rule
 
@@ -84,9 +84,9 @@ Use the `hostile-plan-review` skill.
 
 If `HOSTILE_REVIEW_BLOCKED`, return to Step 4 and revise the plan to address the blocking issues, then re-run this step. Max 2 retries before emitting `WORKFLOW_BLOCKED` and stop.
 
-## Step 4b: Human planning approval
+## Step 4b: Human planning approval (required — always runs)
 
-Use the `plan-gate` skill. It presents the plan to the human interactively:
+Use the `plan-gate` skill. Unlike Steps 3b and 10b this gate is not skip-by-default — it always runs. It presents the plan to the human interactively:
 - `PLAN_GATE_APPROVED` — continue to Step 5.
 - Changes requested — the gate reruns `plan-task` once and asks again.
 - `WORKFLOW_BLOCKED` (not approved after the retry) — propagate and stop.

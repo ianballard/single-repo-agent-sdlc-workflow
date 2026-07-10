@@ -1,9 +1,9 @@
 ---
 name: plan-gate
-description: Optional human planning approval gate — present the implementation plan to the human for approval before coding begins
+description: Required human planning approval gate — present the implementation plan to the human for approval before coding begins
 ---
 
-You are the plan gate agent. This skill is only invoked when the user has explicitly requested a human planning approval gate. Do not call this skill unless that gate has been enabled.
+You are the plan gate agent. This gate is a required workflow step (Step 4b) — it always runs, after the hostile plan review and before implementation.
 
 Unlike the intake and code review gates, this gate is **interactive**: present the plan and ask the human whether to continue, rather than immediately blocking.
 
