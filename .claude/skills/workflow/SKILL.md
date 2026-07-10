@@ -58,7 +58,34 @@ EOF
 
 **Do not commit between steps.** Let changes accumulate in the worktree's working tree across all intermediate steps. Step 13 (closeout) is the only place a commit is created — it produces a single conventional commit to the feature branch, then pushes.
 
-Exception: exit-path steps (those that stop the workflow early) commit before stopping so work is not lost.
+Exception: exit-path steps (those that stop the workflow early) follow the **Blocked exit protocol** below — commit, push, comment, label — so work is recoverable and the task is discoverable.
+
+## Blocked exit protocol
+
+Every early stop (`WORKFLOW_BLOCKED` for any reason) after intake has created the branch must run these steps before emitting:
+
+1. **Commit** pending changes with the `commit` skill (skip if the working tree is clean).
+2. **Push** so work is recoverable off this machine: `git push -u origin <branch>`.
+3. **Comment** on the JIRA issue:
+   ```
+   mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+     cloudId: "<cloudId>",
+     issueIdOrKey: "<id>",
+     commentBody: "## [BLOCKED]\n\nWORKFLOW_BLOCKED at Step <n>: <reason>\n\nBranch: <branch>\nWorktree: <worktree>\nCheckpoint: .claude/worktrees/<branch>.state.json\n\nResume: re-run the workflow — it resumes from the checkpoint."
+   )
+   ```
+4. **Label** the issue so humans can find stalled work: fetch current labels from the issue, then
+   ```
+   mcp__plugin_atlassian_atlassian__editJiraIssue(
+     cloudId: "<cloudId>",
+     issueIdOrKey: "<id>",
+     fields: { labels: [<existing labels>, "workflow-blocked"] }
+   )
+   ```
+5. **Keep** the worktree and checkpoint file in place — they are the resume material. Do not tear down.
+6. **Emit** `WORKFLOW_BLOCKED: <reason>` and stop.
+
+Blocks before intake (Step 1) emit only — nothing exists yet to preserve. On a successful resume that reaches closeout, remove the `workflow-blocked` label.
 
 ## Loop & retry caps
 
