@@ -15,25 +15,26 @@ Task tracking is external, not a directory in this repo. The agent speaks a trac
 ## Getting Started
 
 1. Clone this repo:
-   ```bash
-   git clone <repo-url> <project-folder>
-   cd <project-folder>
-   ```
+```bash
+git clone <repo-url> <project-folder>
+cd <project-folder>
+```
 
 2. Create subdirectories for any role that doesn't exist yet:
-   ```bash
-   mkdir -p frontend backend e2e
-   ```
-   If you're activating the `backlog.md` adapter instead of JIRA, also create and initialize a local task store:
-   ```bash
-  backlog init
-   ```
+```bash
+mkdir -p frontend backend e2e
+```
+
+If you're activating the `backlog.md` adapter instead of JIRA, also create and initialize a local task store:
+```bash
+backlog init
+```
 
 3. Set up the active issue tracker (JIRA by default): connect the Atlassian MCP plugin and make sure the project has these workflow statuses:
-   ```
-   To Do, Intake, Intake Review, Plan, Plan Review, Code, AI Code Review, Human Code Review, Done
-   ```
-   To use a different tracker, see the "Switching trackers" section of `docs/agents/issue-tracker.md`.
+```
+To Do, Intake, Intake Review, Plan, Plan Review, Code, AI Code Review, Human Code Review, Done
+```
+To use a different tracker, see the "Switching trackers" section of `docs/agents/issue-tracker.md`.
 
 ## Workflow
 
