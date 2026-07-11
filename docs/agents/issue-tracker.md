@@ -4,6 +4,8 @@ This file is the tracker-agnostic contract. Skills speak these verbs; they never
 
 Active adapter: jira (.claude/skills/manage-backlog-tasks/adapters/jira.md)
 
+The active adapter resolves the concrete connection details it needs (MCP tool-name prefix, cloudId, project key, etc.) from a local, gitignored config file rather than hardcoding them in this checked-in contract or in the adapter file itself — those details are environment-specific, not shared. For the JIRA adapter, see its `## Connection` section: an environment can expose more than one Atlassian MCP connection at once, each resolving to a different site, so on first run in a given environment the adapter discovers which one serves this repo's project and writes it to that local file; every later run reads it back instead of re-discovering.
+
 ## Verbs
 
 | Verb | Purpose | Used by |
@@ -49,3 +51,7 @@ ACs live in the issue description as `- [ ] #N criterion` / `- [x] #N criterion`
 2. Change the Active adapter line here and in `manage-backlog-tasks/SKILL.md`.
 3. Update the phase→status mapping if the new tracker's states differ.
 4. No component skill changes.
+
+## Switching connection/site (same tracker)
+
+A lighter case than switching trackers: staying on the same vendor (e.g. JIRA) but pointing at a different site, org, or MCP connection — for example, moving this repo's board to a new Atlassian instance, or an environment that swaps which Atlassian MCP connection is available. No file changes needed: delete (or hand-edit) the adapter's local connection config file (`.claude/jira-connection.local.json` for the JIRA adapter) and the next run's `tracker.session-init` re-discovers and re-pins it. No other file changes needed, since every verb in the adapter is written against the placeholders that file resolves.
