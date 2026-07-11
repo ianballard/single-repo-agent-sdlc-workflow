@@ -1,29 +1,41 @@
 # JIRA adapter
 
-Concrete realization of every `docs/agents/issue-tracker.md` contract verb via the Atlassian MCP plugin. Never read or write JIRA data outside of these MCP tools.
+Concrete realization of every `docs/agents/issue-tracker.md` contract verb via an Atlassian MCP connection. Never read or write JIRA data outside of these MCP tools.
+
+## Connection
+
+Every call in this file is written against the placeholders `<mcpTool>` and `<cloudId>` — resolve both (plus the project key) at runtime from a local, gitignored config file. This doc is shared across every clone/environment of this repo; the concrete connection — which of possibly several available Atlassian MCP connections actually serves this repo's project, and its cloudId — is environment-specific and must never be committed here.
+
+**Config file**: `.claude/jira-connection.local.json` (gitignored — see `.gitignore`). Do not embed its contents in this doc; read it at runtime.
+
+**Schema** (all string fields):
+
+| Key | Meaning |
+|---|---|
+| `mcpTool` | The MCP tool-name prefix to substitute for every `<mcpTool>` placeholder in this file (e.g. the prefix shared by all `mcp__<connection>__getJiraIssue`-style tool names for the connection that resolves this repo's project) |
+| `cloudId` | The Atlassian cloudId that resolves to this repo's project under that connection |
+| `site` | The Atlassian site name — for human-readable reference only, not used in calls |
+| `projectKey` | The JIRA project key this repo's issues live under |
 
 ## tracker.session-init
 
-Every call below requires a `cloudId` argument — there is no default. Discover it once per session/workflow run and reuse it for every subsequent call; do not re-fetch per call.
+1. **Check whether `.claude/jira-connection.local.json` exists** (relative to the repo root).
+2. **If it exists**: read `mcpTool`, `cloudId`, and `projectKey` from it and use them for every subsequent call this run — skip discovery entirely.
+3. **If it does not exist** (first run in this environment, or a fresh clone) — run discovery:
 
 ```
-mcp__plugin_atlassian_atlassian__getAccessibleAtlassianResources()
+<mcpTool>getAccessibleAtlassianResources()
 ```
 
-Returns the accessible Atlassian sites, each with a `cloudId`. If there is exactly one, use it. If multiple, pick the one matching the current repo/context or ask the user. Capture it as `<cloudId>`.
+Returns the accessible Atlassian sites, each with a `cloudId`. An environment can expose **more than one Atlassian MCP connection at once**, each resolving to a different site — try each available connection's tool prefix, and for each returned cloudId call `<mcpTool>getVisibleJiraProjects(cloudId: "<cloudId>")` to confirm the expected project key is present under that connection. Once confirmed, capture the resolved `mcpTool`, `cloudId`, and `projectKey`.
 
-If the JIRA project key is not already known from context, discover it:
-
-```
-mcp__plugin_atlassian_atlassian__getVisibleJiraProjects(cloudId: "<cloudId>")
-```
-
-Pick the project matching the current repo/context, or ask the user if multiple exist. Capture the project key (e.g., `PROJ`) — use it in all subsequent JQL and issue creation.
+4. **Write the confirmed values to `.claude/jira-connection.local.json`**, matching the schema above (create the file) so every future run in this environment skips discovery.
+5. **If a cached config's cloudId ever fails** — e.g. a call returns "issue does not exist or you do not have permission to see it" for an issue you know exists — the pin is stale (the site/connection changed underneath it). Re-run discovery per step 3 and overwrite the file with the newly confirmed values. Do not conclude the project or issue doesn't exist just because the cached connection failed to resolve it.
 
 ## tracker.find-work
 
 ```
-mcp__plugin_atlassian_atlassian__searchJiraIssuesUsingJql(
+<mcpTool>searchJiraIssuesUsingJql(
   cloudId: "<cloudId>",
   jql: 'project = "<PROJECT>" AND status = "To Do" AND (assignee IS EMPTY OR assignee = currentUser()) ORDER BY priority ASC, created ASC',
   fields: ["summary", "status", "priority", "assignee", "labels", "issuetype", "issuelinks", "<flaggedFieldKey>"]
@@ -51,7 +63,7 @@ project = "PROJ" AND status in ("Intake", "Plan", "Code", "AI Code Review")
 ## tracker.read
 
 ```
-mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+<mcpTool>getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
 ```
 
 Returns all fields: summary, description, status, assignee, labels, priority, and comments. Pass `fields: [...]` to narrow the response, and `responseContentFormat: "markdown"` when comment bodies must be read as plain text (see `tracker.read-comments`).
@@ -59,7 +71,7 @@ Returns all fields: summary, description, status, assignee, labels, priority, an
 ## tracker.create
 
 ```
-mcp__plugin_atlassian_atlassian__createJiraIssue(
+<mcpTool>createJiraIssue(
   cloudId: "<cloudId>",
   projectKey: "<PROJECT>",
   summary: "Task title",
@@ -87,27 +99,29 @@ The JIRA board uses these exact statuses — transition to them by name:
 | `human-review` | `Human Code Review` |
 | `done` | `Done` |
 
-Always discover transitions before transitioning — the available transition IDs depend on the current status:
+Discover transitions before transitioning — never hand-guess an ID that was never returned by a real call:
 
 ```
-1. mcp__plugin_atlassian_atlassian__getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
+1. <mcpTool>getTransitionsForJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>")
    → Returns list of {id, name} transitions available from current status
 
-2. mcp__plugin_atlassian_atlassian__transitionJiraIssue(
+2. <mcpTool>transitionJiraIssue(
      cloudId: "<cloudId>",
      issueIdOrKey: "<id>",
      transition: { id: "<id-from-step-1>" }
    )
 ```
 
-Pick the transition whose `name` matches the target status exactly (case-insensitive). Note the parameter is `transition: { id: "..." }`, not a flat `transitionId`. Never guess transition IDs.
+Pick the transition whose `name` matches the target status exactly (case-insensitive). Note the parameter is `transition: { id: "..." }`, not a flat `transitionId`.
+
+**Caching the transition map:** on JIRA Cloud "simplified" software-project boards (the common case for solo/small-team projects, including this one), every transition is typically configured `isGlobal: true` — the full `{name → id}` map returned by the *first* `getTransitionsForJiraIssue` call in a workflow run is valid for every later transition, regardless of which status the issue is currently in. Since a single task moves through 6+ statuses per run and each status-gated re-fetch is a full round trip, cache the map from the first real call and reuse it for the rest of the run instead of re-fetching before every transition. If a cached ID is ever rejected by `transitionJiraIssue` (e.g. a board with a status-gated workflow scheme, where later-status transitions genuinely differ), fall back to a fresh `getTransitionsForJiraIssue` call before retrying — do not keep retrying a rejected cached ID, and do not extend the cache to a board you haven't confirmed is fully global.
 
 ## tracker.assign
 
 ```
-mcp__plugin_atlassian_atlassian__lookupJiraAccountId(cloudId: "<cloudId>", searchString: "<email or name>")
+<mcpTool>lookupJiraAccountId(cloudId: "<cloudId>", searchString: "<email or name>")
 
-mcp__plugin_atlassian_atlassian__editJiraIssue(
+<mcpTool>editJiraIssue(
   cloudId: "<cloudId>",
   issueIdOrKey: "<id>",
   fields: { assignee: { accountId: "<account-id>" } }
@@ -119,7 +133,7 @@ The search argument to `lookupJiraAccountId` is `searchString`, not `query`.
 ## tracker.comment
 
 ```
-mcp__plugin_atlassian_atlassian__addCommentToJiraIssue(
+<mcpTool>addCommentToJiraIssue(
   cloudId: "<cloudId>",
   issueIdOrKey: "<id>",
   commentBody: "## [NOTES]\n\n<content>"
@@ -133,7 +147,7 @@ Also relevant: the `workflow-blocked` JIRA label, added to an issue on an early 
 ## tracker.read-comments
 
 ```
-mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: ["comment"], responseContentFormat: "markdown")
+<mcpTool>getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: ["comment"], responseContentFormat: "markdown")
 ```
 
 `responseContentFormat: "markdown"` matters — without it, comment bodies come back as ADF (nested JSON), not plain text. Filter the returned comments client-side for one starting with the requested `## [MARKER]` header:
@@ -154,7 +168,7 @@ Fetch the issue (`tracker.read`) and parse the description for `- [ ] #N` and `-
 3. Do all replacements in one pass on the description string, then call `editJiraIssue` once:
 
 ```
-mcp__plugin_atlassian_atlassian__editJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: { description: "<updated description>" })
+<mcpTool>editJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: { description: "<updated description>" })
 ```
 
 ACs must be managed by editing the issue description, not by adding comments.
@@ -162,7 +176,7 @@ ACs must be managed by editing the issue description, not by adding comments.
 ## tracker.set-labels
 
 ```
-mcp__plugin_atlassian_atlassian__editJiraIssue(
+<mcpTool>editJiraIssue(
   cloudId: "<cloudId>",
   issueIdOrKey: "<id>",
   fields: { labels: ["label1", "label2"] }
@@ -176,13 +190,13 @@ mcp__plugin_atlassian_atlassian__editJiraIssue(
 Requires a one-time discovery per session:
 
 ```
-mcp__plugin_atlassian_atlassian__getIssueLinkTypes(cloudId: "<cloudId>")
+<mcpTool>getIssueLinkTypes(cloudId: "<cloudId>")
 ```
 
 Find the type whose `inward` phrase is `"is blocked by"` (default Jira Cloud names it `Blocks`). Capture its `id` as `<blocksLinkTypeId>`. If no such link type exists on this site, skip the blocked check entirely (treat nothing as blocked).
 
 ```
-mcp__plugin_atlassian_atlassian__getJiraIssueTypeMetaWithFields(cloudId: "<cloudId>", projectIdOrKey: "<PROJECT>", issueTypeId: "<issue-type-id>", requiredFieldsOnly: false)
+<mcpTool>getJiraIssueTypeMetaWithFields(cloudId: "<cloudId>", projectIdOrKey: "<PROJECT>", issueTypeId: "<issue-type-id>", requiredFieldsOnly: false)
 ```
 
 Find the field named `Flagged` (a checkboxes custom field, e.g. `customfield_10021`). Capture its `key` as `<flaggedFieldKey>`. If no such field exists in this project, skip the flagged check entirely. Neither ID is guaranteed to be the same across different JIRA sites — always discover, never hardcode.
@@ -190,7 +204,7 @@ Find the field named `Flagged` (a checkboxes custom field, e.g. `customfield_100
 Then, when reading a candidate issue, request both:
 
 ```
-mcp__plugin_atlassian_atlassian__getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: ["status", "priority", "issuelinks", "<flaggedFieldKey>"])
+<mcpTool>getJiraIssue(cloudId: "<cloudId>", issueIdOrKey: "<id>", fields: ["status", "priority", "issuelinks", "<flaggedFieldKey>"])
 ```
 
 - **Flagged**: the `<flaggedFieldKey>` value is a non-empty array (e.g. `[{"value": "Impediment"}]`) rather than `null` — disqualify.
@@ -319,6 +333,6 @@ JQL returns priorities as: `Highest > High > Medium > Low > Lowest`. Workflow pi
 ## Rules
 
 - Never read or write JIRA data outside of the MCP tools
-- Always use `getTransitionsForJiraIssue` before `transitionJiraIssue` — never guess transition IDs
+- Every transition ID used must trace back to a real `getTransitionsForJiraIssue` response this run — never hand-guess one. The one exception: reusing a cached map from an earlier call in the *same run*, per the caching note under `tracker.set-phase`
 - ACs must be managed by editing the issue description, not by adding comments
 - JIRA status is the single source of truth for workflow phase — use real transitions, not labels
