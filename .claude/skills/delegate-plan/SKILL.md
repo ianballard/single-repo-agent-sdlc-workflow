@@ -49,6 +49,20 @@ the `definition-of-done` skill, before any code exists. Flag criteria
 requiring a human action (deploys, account setup, registrations) as
 human-gated.
 
+Resolve two things here that execution cannot decide for itself, or they
+become skipped specs and false-green suites later:
+
+- **Real-dependency verification.** For every integration seam
+  (browser↔API, app↔cloud, service↔database, client↔third-party) the DoD
+  must carry at least one criterion verified against the real dependency,
+  not a mock — and scheduled before the final deploy gate. `delegate-plan`
+  is where that decision is cheap; do not let it default to unit + mocked
+  e2e (see `definition-of-done` rules 5–6).
+- **Test-fixture provisioning.** Any e2e criterion naming an external
+  system must state how the test gets its state there (test accounts,
+  confirmation flows, seed data). Fold the human-run parts into
+  `## Human prerequisites` (Step 5).
+
 ## Step 5 — Plan
 
 Write `plan.md` in the trail directory, following the doctrine of

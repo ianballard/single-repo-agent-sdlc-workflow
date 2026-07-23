@@ -32,6 +32,15 @@ Doctrine, not configuration — you decide per delegation:
   mechanical the verification, the cheaper the model you can hand the work
   to. Judgment-dense work — adversarial review, verification judgment —
   stays with you. Decided per-delegation, not by a table.
+- **Resume safety after an interrupt.** A subagent reporting "interrupted"
+  is not proof its work stopped — a long-running child process (a build, a
+  `terraform apply`, a migration) can still be live, and an interrupt
+  notification can be stale. Before taking over or re-dispatching, confirm
+  the work is actually dead: check for the child processes it would have
+  spawned (`pgrep`), and prefer pinging the agent to re-confirm over
+  assuming. Two operators on one piece of shared mutable state (a Terraform
+  state file, a database mid-migration) at once is the failure to avoid;
+  where the state layer has a lock, it is your backstop, not your plan.
 
 ## Step 2 — Verify (HARD GATE 2: orchestrator review, fresh-context evidence)
 
@@ -53,7 +62,25 @@ exact instructions: what the human should do, with what, and the expected
 result. Wait. When the human reports done, run the criterion's post-action
 verification (e.g. post-deploy smoke) before marking it. Never work around
 a human gate — the repo guardrails (no terraform/cdk apply, no mutating
-AWS calls) exist precisely for these steps.
+cloud calls) exist precisely for these steps.
+
+**Authorized guardrail exceptions get a durable, committed record.** If the
+human explicitly authorizes an action a guardrail normally forbids — e.g.
+relaxing a permission rule so the agent itself performs a one-time deploy —
+do not rely on that authorization living only in the conversation or in an
+uncommitted edit to a config/policy file. A fresh subagent cannot see the
+conversation, and an uncommitted change to a guardrail file
+(`.claude/settings*`, `CLAUDE.md`, etc.) is indistinguishable from tampering
+— a well-behaved subagent will refuse it or revert it, which is correct
+behavior in the wrong context and burns cycles. Record the exception
+durably instead: commit an `AUTHORIZATION.md` to the trail directory
+(or a dated section in `spec.md`) stating exactly what the human authorized,
+its scope, and its expiry ("agent may run `terraform apply` to `<env>` for
+this deploy only; revert on completion"). Hand every subagent doing the
+authorized work a pointer to that committed record, and instruct it to
+verify the record rather than re-litigate the guardrail. You still never
+edit the guardrail files yourself — that remains the human's action; you
+record the authorization, not grant it.
 
 ## Step 4 — Closeout (required)
 

@@ -19,12 +19,39 @@ standalone whenever "done" needs to be pinned down before implementation.
    criterion; "GET /api/orders returns 403 for a user without the
    `orders:read` scope — verify via unit test" is.
 3. **Cheapest mode that actually verifies.** Do not stack modes for
-   ceremony. One well-chosen mode per criterion.
+   ceremony. One well-chosen mode per criterion — but "cheapest" means
+   cheapest mode that *actually exercises the behavior*, not the cheapest
+   mode that produces a green checkmark (see rules 5–6).
 4. **Human-gated criteria carry their prerequisites.** A criterion the
    agent cannot or must not complete alone names the human action, what
    the human needs ready beforehand (these feed the plan's
    `## Human prerequisites` section), and the post-action verification the
    agent runs afterward.
+5. **Every integration boundary gets one real-dependency criterion.** For
+   each seam where two systems meet — browser↔API, app↔cloud service,
+   service↔database, client↔third-party — at least one criterion must be
+   verified against the REAL dependency, not a mock or an in-process
+   double. Unit tests and mocked/DOM-emulated e2e (e.g. jsdom) do NOT
+   exercise cross-origin/CORS, real-browser runtime, real auth exchanges
+   (e.g. SRP), or cloud request-signing — a suite can be fully green while
+   the app is broken the moment it meets the real thing. Put a "drive the
+   running app" criterion on these seams, and schedule it EARLIER than the
+   final human-gated deploy — the first real-dependency contact should not
+   be the last checkpoint.
+6. **A static/dry-run check is not proof the thing works.** Linters, type
+   checks, schema validators, `--dry-run`, and `terraform validate` verify
+   syntax and the dependency graph, not that the resource/behavior actually
+   works when created or run. A criterion whose only verification is a
+   static check is weak; name the mode that exercises the real thing (for
+   infra, that is a real `plan`/`apply` at a human-gated checkpoint — say so
+   explicitly rather than resting on `validate`).
+7. **E2E against an external system names its fixture story.** Any criterion
+   verified by e2e/integration against a system with its own state
+   (auth providers, SaaS APIs, seeded databases) must state HOW the test
+   obtains its fixtures there — test accounts, confirmation/verification
+   steps, seed data, teardown. An unresolved "how does the test get a
+   confirmed user?" becomes a skipped spec at execution time. This
+   provisioning story also feeds the plan's `## Human prerequisites`.
 
 ## Verification mode menu
 
@@ -36,6 +63,10 @@ standalone whenever "done" needs to be pinned down before implementation.
 | Adversarial rubric review | Cheap | Always available; the rubric is this DoD itself, judged by the orchestrator (see the `delegate-execute` skill's hard gate 2). |
 | Human-gated checkpoint | Variable | Steps the agent can't or mustn't perform alone: deploys, cloud account setup, external registrations. Name the human action, its prerequisites, and the post-action verification (e.g. post-deploy smoke) the agent runs once the human is done. |
 | Eval harness | Expensive | ONLY for AI-behavior features or repeated-task batches where it amortizes. For a normal feature, "done" is tests + driven verification + rubric review; anything more is eval theater. Say so if asked for more. |
+
+Read this menu together with rules 5–7: a cheap mode that only exercises a
+mock or a static graph is not the right mode for an integration seam or an
+infra resource, however cheap it looks.
 
 ## Output format
 
