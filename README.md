@@ -38,7 +38,7 @@ To use a different tracker, see the "Switching trackers" section of `docs/agents
 
 ## Ways to work in this repo
 
-There are three lanes. Pick the lightest one that fits — the point is to match the process overhead to the work, not to run every change through a lifecycle.
+There are three lanes. Pick the best one that fits — the point is to match the process to the work.
 
 ### 1. Interactive session — questions & small fixes
 
@@ -54,15 +54,3 @@ For work with no ticket that would be smothered by per-task ticketing and the 13
 
 - **`delegate-plan`** (invocation 1) does all the judgment-dense thinking up front: brainstorm → PRD → `spec.md` with a **pre-committed Definition of Done** → `plan.md`, all committed to `docs/specs/YYYY-MM-DD-<slug>/`. The human reviews the artifacts.
 - **`delegate-execute`** (invocation 2) delegates the plan to subagents, **verifies every deliverable against the pre-committed DoD itself** (never the subagent's self-report), halts at `[HUMAN-GATED]` checkpoints, and closes out. Plan once, delegate and verify, land as one PR.
-
-Its own triage scales down — genuinely trivial un-ticketed changes it just does inline — so doctrine mode is really *the un-ticketed lane*, with large greenfield builds as the headline use.
-
-### Choosing a lane
-
-| Your situation | Lane |
-| --- | --- |
-| A question, or a small self-contained fix | Interactive session |
-| A normal feature that has (or should have) a tracker issue | `workflow` skill |
-| An un-ticketed build big enough to want a written contract before code | Doctrine mode (`delegate-plan` → `delegate-execute`) |
-
-The precise routing signal is **ticketed vs un-ticketed**: ticketed work goes through `workflow`; un-ticketed work goes through doctrine mode (which drops to inline for trivial changes). Size is just the everyday proxy — you reach for doctrine mode when the build is large.
