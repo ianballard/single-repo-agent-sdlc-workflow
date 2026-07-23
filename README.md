@@ -1,6 +1,6 @@
 # Agent SDLC Workflow
 
-A harness for running an end-to-end software development lifecycle (SDLC) workflow with an autonomous agent. The agent claims tracker tasks, runs intake, plans and implements changes, runs tests and reviews, and closes out work.
+A harness for running software development with an autonomous agent. It offers three lanes of operation — a full ticketed SDLC workflow, a plan-once/delegate-and-verify doctrine mode for large un-ticketed builds, and plain interactive sessions — so the ceremony matches the size of the work. See **[Ways to work in this repo](#ways-to-work-in-this-repo)** for how to choose.
 
 ## Architecture
 
@@ -36,6 +36,21 @@ To Do, Intake, Intake Review, Plan, Plan Review, Code, AI Code Review, Human Cod
 ```
 To use a different tracker, see the "Switching trackers" section of `docs/agents/issue-tracker.md`.
 
-## Workflow
+## Ways to work in this repo
 
-When you want the agent to coordinate a task end-to-end, invoke the `workflow` skill. It runs the full 13-step lifecycle: claim work → intake → plan → implement → test → review → close out. See `CLAUDE.md` and `.claude/skills/workflow/SKILL.md` for details.
+There are three lanes. Pick the best one that fits — the point is to match the process to the work.
+
+### 1. Interactive session — questions & small fixes
+
+Just talk to the agent. No skill, no ticket, no PR automation: you drive turn by turn and review each change. This is the right lane for questions, exploration, one-off fixes, and anything small enough that a formal lifecycle would cost more than the change itself.
+
+### 2. `workflow` skill — normal, tracked feature development
+
+The main SDLC lane, for one tracked task at a time. Invoke the `workflow` skill and it runs the full 13-step lifecycle end-to-end: claim work → intake (branch) → plan (with adversarial plan review + a required human plan gate) → implement → verify acceptance criteria → unit & e2e tests → code review → audit → closeout (squash, push, open a PR, move the issue to Human Code Review). Use it for normal feature work that has — or should have — a tracker issue and needs the gates, audit trail, and PR hand-off. See `CLAUDE.md` and `.claude/skills/workflow/SKILL.md`.
+
+### 3. Doctrine mode (`delegate-plan` → `delegate-execute`) — large / un-ticketed builds
+
+For work with no ticket that would be smothered by per-task ticketing and the 13-step lifecycle — especially large or greenfield builds. Two invocations:
+
+- **`delegate-plan`** (invocation 1) does all the judgment-dense thinking up front: brainstorm → PRD → `spec.md` with a **pre-committed Definition of Done** → `plan.md`, all committed to `docs/specs/YYYY-MM-DD-<slug>/`. The human reviews the artifacts.
+- **`delegate-execute`** (invocation 2) delegates the plan to subagents, **verifies every deliverable against the pre-committed DoD itself** (never the subagent's self-report), halts at `[HUMAN-GATED]` checkpoints, and closes out. Plan once, delegate and verify, land as one PR.
