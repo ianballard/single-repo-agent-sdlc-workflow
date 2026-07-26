@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Rejects pushes to trunk/environment branches, and remote branch deletion.
+#
+# WHY THIS EXISTS as a second layer: the `deny` rules in .claude/settings.json match the
+# COMMAND STRING, so they are pattern-based and incomplete by construction.
+# `Bash(git push origin develop*)` does not match either of these, and both push to develop:
+#
+#     git push origin HEAD:develop
+#     git push origin feature/x:develop
+#
+# This hook reads the RESOLVED REFSPEC from git on stdin, so it sees the real destination
+# regardless of how the command was spelled. Never rely on the permission rule alone.
+#
+# stdin format, one line per ref being pushed:
+#     <local ref> <local sha> <remote ref> <remote sha>
+#
+# Active only when core.hooksPath points here:  git config core.hooksPath .githooks
+
+set -uo pipefail
+
+PROTECTED="main master develop staging production"
+ZERO=$(git hash-object --stdin </dev/null | tr '0-9a-f' '0')
+
+fail=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${remote_ref:-}" ]] && continue
+
+  branch="${remote_ref#refs/heads/}"
+
+  for p in $PROTECTED; do
+    if [[ "$branch" == "$p" ]]; then
+      echo "" >&2
+      echo "BLOCKED by .githooks/pre-push" >&2
+      echo "  Refusing to push to protected branch '$p'." >&2
+      echo "  Resolved refspec: ${local_ref:-<deleted>} -> $remote_ref" >&2
+      echo "" >&2
+      echo "  All changes land through a pull request opened against the base branch." >&2
+      echo "  See the open-pr skill, and 'Branch Protection' in CLAUDE.md." >&2
+      echo "" >&2
+      fail=1
+    fi
+  done
+
+  # Branch deletion: local sha is all zeros.
+  if [[ "$local_sha" == "$ZERO" ]]; then
+    echo "" >&2
+    echo "BLOCKED by .githooks/pre-push" >&2
+    echo "  Refusing to delete remote branch '$branch'." >&2
+    echo "  Remote branch deletion is a human action." >&2
+    echo "" >&2
+    fail=1
+  fi
+done
+
+exit $fail

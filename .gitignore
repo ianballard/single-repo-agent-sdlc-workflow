@@ -3,6 +3,24 @@
 .claude/settings.local.json
 .claude/jira-connection.local.json
 
+# Agent audit trail (local forensic evidence, not a committed artifact)
+logs/
+
+# Playwright MCP session artifacts (console/page dumps from browser automation)
+.playwright-mcp/
+
+# Secrets — never commit. Templates (.env.example etc.) are intentionally tracked.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.p12
+*.pfx
+*.tfvars
+!*.tfvars.example
+
 # Node
 node_modules/
 dist/

@@ -36,6 +36,31 @@ To Do, Intake, Intake Review, Plan, Plan Review, Code, AI Code Review, Human Cod
 ```
 To use a different tracker, see the "Switching trackers" section of `docs/agents/issue-tracker.md`.
 
+4. Activate the git-level guardrails. **This is required once per clone** — `.git/hooks/` is not versioned, so the hooks are committed to `.githooks/` and only run once `core.hooksPath` points at them:
+
+```bash
+git config core.hooksPath .githooks
+chmod +x .githooks/*
+```
+
+This turns on three hooks that run inside git, and so catch what a command-string permission rule structurally cannot:
+
+- **`pre-push`** — refuses pushes whose *resolved refspec* targets `main`/`master`/`develop`/`staging`/`production`. This is the only layer that catches `git push origin HEAD:develop`, which no `git push origin develop*` pattern matches.
+- **`pre-commit`** — refuses staged secret files and scans staged content. Matters most because the workflow commits once at closeout with `git add -A`, exactly when an untracked `.env` gets swept in.
+- **`commit-msg`** — validates conventional-commit format.
+
+Note the ordering: an agent session cannot run the command above for you, because `git config core.hooksPath*` is a denied operation — a guardrail an agent could install is one it could also remove.
+
+5. Install `gitleaks` (recommended):
+
+```bash
+brew install gitleaks
+```
+
+`pre-commit` uses it for entropy-and-context secret scanning when present, and falls back to a weaker self-contained pattern scan when it isn't — so the hook has no hard dependency, but it is meaningfully better with it. It is also the layer that catches low-entropy secrets (a human-chosen password), which the pattern-based hooks deliberately do not attempt.
+
+Guardrail mechanics, the full rule inventory, and known gaps are documented in `docs/agents/claude-code-guardrails.md`; the policy they enforce is in `CLAUDE.md`.
+
 ## Ways to work in this repo
 
 There are three lanes. Pick the best one that fits — the point is to match the process to the work.

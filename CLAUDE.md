@@ -77,12 +77,81 @@ These rules are policy, and are also mechanically enforced as `deny`/`ask` permi
 - **Never run `cdk deploy` or `cdk destroy`.** Same reasoning as Terraform apply/destroy — these mutate live infrastructure and must go through human/CI review, not an agent session.
 - **Never force-push** (`git push --force`, `git push -f`). Rewriting shared branch history is a human decision, especially on a repo where audit trail and history integrity matter.
 - **Never run `rm -rf /*`** or any other wipe-the-filesystem command.
-- **Never edit or write `.claude/settings*` files.** Permission configuration is self-protecting — an agent session must not be able to loosen its own guardrails. Changes to `.claude/settings.json` are a human-only action.
 - This mirrors the "no custody, no destructive infra changes without a human" posture the platform needs for SOC 2 credibility with CDFIs, banks, and regulators — see the org-level security posture for the broader rationale.
+
+## Agent Configuration Changes
+
+Claude **may** change its own guidance and configuration in this repo — this is a workflow-development repo, and evolving the skills is the point. But every such change is surfaced for human approval rather than applied silently.
+
+The following are `ask` permission rules in `.claude/settings.json`, so the tool call pauses for interactive approval instead of being blocked:
+
+- `CLAUDE.md` (at any depth, including inside worktrees)
+- `.claude/settings.json` and `.claude/settings.local.json`
+- `.claude/skills/`, `.claude/hooks/`, `.claude/agents/`, `.claude/commands/`
+
+`.claude/worktrees/**` is deliberately **excluded** — all task work happens inside a worktree, so prompting there would make the workflow unusable. The rules are written as `Edit(**/.claude/skills/**)` and friends, which reach both the main checkout and the copies inside each worktree without touching worktree source files.
+
+Two mechanical notes for anyone editing these rules:
+
+- Use `Edit(...)`, never `Write(...)`. Per the Claude Code permissions docs, `Write(path)` rules "are not matched by file permission checks — only `Edit(path)` rules are"; `Edit` covers Write, Edit, and NotebookEdit. A `Write(...)` rule is inert and emits a startup warning.
+- `deny` beats `ask` beats `allow`, first match wins, and specificity does not matter. An `ask` rule never fires if a `deny` rule also matches the same path.
+
+Accepted trade-off: because these are `ask` and not `deny`, an approved edit can reach the hooks that do the enforcing. The audit log (below) is what makes that visible after the fact. This is a deliberate choice for a repo under active development, not an oversight.
+
+Second trade-off, currently accepted: an `ask` rule only prompts in a permission mode that prompts. Under `auto` a classifier resolves it and under `bypassPermissions` it is skipped, so in those modes the review above happens **after** the change via the audit log rather than before it via a prompt. `deny` rules and the hooks are unaffected and fire in every mode. See `docs/agents/claude-code-guardrails.md` §6 for the exact settings change if this ever needs to become a hard gate.
+
+## Secrets & Privacy
+
+- **Never read, edit, grep, or glob a secret-bearing file.** This covers `.env` and every `.env.*` variant at any depth, `*.env`, key material (`*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa`, `id_ed25519`, …), `*.tfvars`, `.netrc`, `.npmrc`, `.pypirc`, `~/.aws/credentials`, `~/.ssh/**`, `~/.kube/config`, `~/.docker/config.json`, `~/.config/gh/hosts.yml`, and project-local secret sidecars like `.claude/jira-connection.local.json`.
+- **Templates are explicitly allowed**: `.env.example`, `.env.sample`, `.env.template`, `.env.dist`, `*.pub`, and `.claude/settings.local.json`. When a task needs a new configuration value, add it to the `.example` file and ask the human to populate the real one out of band.
+- This is enforced by `.claude/hooks/block-secret-file-access.sh` rather than a permission rule, because gitignore-style permission patterns have **no negation operator** — `deny(.env.*)` would also swallow `.env.example`, and no `allow` rule can claw it back.
+- **Never write secret material into a file or a command.** AWS access key IDs (`AKIA…`), PEM private-key blocks, and `sk-…` API keys are blocked in Edit/Write content and in Bash command strings.
+- **Never print a live credential into the transcript.** `gh auth token`, `gh config get -h github.com oauth_token`, and equivalents are denied — transcripts flow into logs, memory files, and compaction summaries.
+- Permission rules for `Read`/`Edit` also cover file commands Claude Code recognises in Bash (`cat`, `head`, `tail`, `sed`), but **not** arbitrary subprocesses (`python -c`, `node -e`). The hook's Bash arm covers the common remainder; OS-level enforcement would require sandboxing.
+
+## Git & GitHub Guardrails
+
+Beyond the branch protection below, these are blocked because this workflow defers all commits to closeout (Step 13) — uncommitted working-tree state **is** the task's work product, for the whole run.
+
+- **Work destruction is denied**: `git reset --hard`, `git clean -f*`, `git checkout -- .`, `git restore <path>`, `git checkout HEAD -- <path>`, `git branch -D`, `git reflog expire`, `git gc --prune`, `git filter-branch`.
+- **Safe variants are deliberately permitted**, because a blanket ban on these subcommands blocked ordinary development:
+  - `git reset --soft` — closeout's squash needs it.
+  - `git clean -n` / `--dry-run` — deletes nothing; previewing stray files is useful.
+  - `git restore --staged` — unstages only, the working tree keeps its changes. Combined with `--worktree` it does discard, and stays denied.
+  - `git branch -d` — git already refuses to delete an unmerged branch. Only `-D` forces it.
+  - plain `git gc` — routine maintenance git runs on its own; its default two-week prune horizon leaves today's work recoverable.
+  - `git stash list` / `show` — read-only.
+- These exceptions live in `.claude/hooks/block-destructive-git.sh`, **not** in `settings.json`, for a structural reason: a permission rule has no negation operator and `deny` beats everything, so `Bash(git clean*)` cannot carve out `-n`. Nuanced rules belong in a hook; `settings.json` should only hold rules with no legitimate variant.
+- **`git stash` (push) requires approval.** It is not destructive, so nothing flags it, but it silently empties the worktree and the next workflow step reports the implementation missing. `git stash drop` / `clear` are denied outright.
+- **`git worktree remove --force` requires approval.** Closeout legitimately tears down the worktree, so this is `ask`, not `deny`.
+- **Remote and config tampering is denied**: `git remote add` / `set-url` (repointing origin exfiltrates the whole repo and bypasses network egress checks), `git config` writes to `core.hooksPath` / `credential.helper` / `alias.*` (arbitrary execution and credential theft laundered through a git subcommand), any `git config --global`, and `git submodule add` / `update --remote`.
+- **Remote branch deletion and mass-push are denied**: `git push --delete`, `git push origin :branch`, `git push --mirror`, `git push --all`.
+- **`--no-verify` is denied** on commit and push — it would bypass the `.githooks/` layer described below.
+- **`gh pr merge` is denied.** Closeout hands off at Human Code Review; a human reviews the PR and transitions the issue to Done. Nothing in an agent session merges. Also denied: `gh repo delete`, `gh release delete`, `gh secret set`, and `gh api` with `-X POST/PATCH/PUT/DELETE` (arbitrary GitHub mutation, and an egress channel invisible to the curl-based check). `gh config get` is denied only for credential keys — `gh config get git_protocol` is fine.
+- **Outbound POSTs require approval rather than being blocked.** `curl -d`/`-T`/`-F` and `wget --post` to a non-localhost host prompt, because testing a staging endpoint or a third-party API is legitimate work. Unambiguous exfiltration shapes stay hard denials: archive-or-encode piped into a network tool, `printenv | curl`, raw sockets (`nc`/`socat`), and `scp`/`rsync` to a remote host. A prompt still halts an unattended run, so an autonomous attempt cannot self-approve.
+
+## Audit Trail
+
+Three append-only JSONL files under `logs/audit/`, gitignored — local forensic evidence, not a committed artifact:
+
+- `attempts.jsonl` — every tool call **attempted**, written by `audit-attempt-log.sh` at `PreToolUse` *before* any hook or permission rule can block it.
+- `commands.jsonl` — every Bash command that **executed** (`audit-command-log.sh`).
+- `file-changes.jsonl` — every file change that **executed** (`audit-file-change-log.sh`), flagging guardrail files with `"guardrail":true`.
+
+The split is structural, not redundant: `PostToolUse` only fires on calls that run, so a *blocked* command can only be recorded before the fact. All three emit a shared content-derived `id`, so "what was denied" is a join between the attempt log and the execution logs rather than a guess. Together they answer **"everything the agent tried"**, not just "everything it did" — the record the SOC 2 posture above implies.
+
+Queries, and two honest caveats about the join (in-flight calls look denied; repeated identical calls share an id), are in `docs/agents/claude-code-guardrails.md` §8.
+
+Unlike the blocking hooks, the audit hooks **fail open** — a logging failure exits 0 rather than halting work.
 
 ## Branch Protection
 
-- **Never push directly to `main`, `develop`, `staging`, or `master`.** These are trunk/environment branches; all changes land through a pull request opened against the appropriate base (see `open-pr` skill), never a direct push. This is intended to be mechanically enforced as `deny` rules on `git push` to these branches in `.claude/settings.json`, same posture as the other guardrails above.
+- **Never push directly to `main`, `develop`, `staging`, or `master`.** These are trunk/environment branches; all changes land through a pull request opened against the appropriate base (see `open-pr` skill), never a direct push.
+- This is enforced at **two** layers, deliberately:
+  1. `deny` rules on `git push` in `.claude/settings.json` — these match the *command string*, so they are pattern-based and incomplete by nature.
+  2. `.githooks/pre-push` — this sees the **resolved refspec**, so it catches what the string match cannot.
+- The second layer exists because the first is bypassable: `Bash(git push origin develop*)` does not match `git push origin HEAD:develop`, nor `git push origin feature/x:develop`, and both push to `develop`. Never rely on the permission rule alone.
+- The `.githooks/` directory is only active once `core.hooksPath` points at it: `git config core.hooksPath .githooks`. This is a one-time human setup step per clone — `.git/hooks/` is not versioned and does not survive a fresh clone. `git config` writes are otherwise denied (see above), so an agent cannot unset it.
 
 ## Agent skills
 

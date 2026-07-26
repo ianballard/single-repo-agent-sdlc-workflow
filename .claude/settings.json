@@ -33,7 +33,16 @@
       "Bash(dir:*)"
     ],
     "ask": [
-      "Bash(aws:*)"
+      "Bash(aws:*)",
+      "Edit(CLAUDE.md)",
+      "Edit(**/.claude/settings.json)",
+      "Edit(**/.claude/settings.local.json)",
+      "Edit(**/.claude/skills/**)",
+      "Edit(**/.claude/hooks/**)",
+      "Edit(**/.claude/agents/**)",
+      "Edit(**/.claude/commands/**)",
+      "Bash(git worktree remove*)",
+      "Bash(git commit --amend*)"
     ],
     "deny": [
       "Bash(terraform apply:*)",
@@ -96,8 +105,83 @@
       "Bash(git push -u origin develop*)",
       "Bash(git push -u origin staging*)",
       "Bash(rm -rf /*)",
-      "Edit(.claude/settings*)",
-      "Write(.claude/settings*)"
+      "Read(.env)",
+      "Edit(.env)",
+      "Read(**/*.pem)",
+      "Edit(**/*.pem)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.ssh/**)",
+      "Read(~/.netrc)",
+      "Read(**/.claude/*.local.json)",
+      "Bash(git reset --hard*)",
+      "Bash(git checkout -- *)",
+      "Bash(git branch -D*)",
+      "Bash(git stash drop*)",
+      "Bash(git stash clear*)",
+      "Bash(git reflog expire*)",
+      "Bash(git filter-branch*)",
+      "Bash(git update-ref -d*)",
+      "Bash(git remote add*)",
+      "Bash(git remote set-url*)",
+      "Bash(git remote remove*)",
+      "Bash(git config --global*)",
+      "Bash(git config --unset*)",
+      "Bash(git config core.hooksPath*)",
+      "Bash(git config credential.helper*)",
+      "Bash(git config alias.*)",
+      "Bash(git submodule add*)",
+      "Bash(git submodule update --remote*)",
+      "Bash(git push --delete*)",
+      "Bash(git push --mirror*)",
+      "Bash(git push --all*)",
+      "Bash(git push origin :*)",
+      "Bash(git push --no-verify*)",
+      "Bash(git commit --no-verify*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh auth token*)",
+      "Bash(gh repo delete*)",
+      "Bash(gh release delete*)",
+      "Bash(gh secret set*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|NotebookEdit|Grep|Glob",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit-attempt-log.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-secret-file-access.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-secret-in-write.sh\"" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit-attempt-log.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-secret-file-access.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-secret-in-command.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-destructive-git.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-remote-tamper.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-gh-dangerous.sh\"" },
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-exfiltration.sh\"" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit-command-log.sh\"" }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/audit-file-change-log.sh\"" }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
