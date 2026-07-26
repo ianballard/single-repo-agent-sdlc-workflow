@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Validates conventional-commit format. The `commit` skill already produces this shape;
+# this makes it enforced rather than hoped for, and applies to human commits too.
+#
+# Accepted:  type(optional-scope)!: subject
+# Types:     feat fix docs style refactor perf test build ci chore revert
+#
+# Merge, revert, squash, and fixup commits are exempt — git generates those subjects.
+#
+# Active only when core hooksPath points here:  git config core.hooksPath .githooks
+
+set -uo pipefail
+
+MSG_FILE="$1"
+first_line=$(head -n1 "$MSG_FILE")
+
+# Exempt git-generated subjects.
+case "$first_line" in
+  "Merge "*|"Revert "*|"squash! "*|"fixup! "*|"amend! "*|"Initial commit") exit 0 ;;
+esac
+
+# Ignore comment-only / empty messages: git aborts on those anyway.
+[[ -z "${first_line// /}" || "$first_line" == \#* ]] && exit 0
+
+PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: .+'
+
+if ! printf '%s' "$first_line" | grep -qE "$PATTERN"; then
+  echo "" >&2
+  echo "BLOCKED by .githooks/commit-msg: subject is not a conventional commit." >&2
+  echo "" >&2
+  echo "  Got:      $first_line" >&2
+  echo "  Expected: type(optional-scope): subject" >&2
+  echo "  Types:    feat fix docs style refactor perf test build ci chore revert" >&2
+  echo "" >&2
+  echo "  Examples: feat(frontend): add task filter dropdown" >&2
+  echo "            fix(backend): reject empty issue keys at intake" >&2
+  echo "            docs: document the .env access guardrail" >&2
+  echo "" >&2
+  exit 1
+fi
+
+if [[ ${#first_line} -gt 100 ]]; then
+  echo "BLOCKED by .githooks/commit-msg: subject is ${#first_line} chars; keep it under 100." >&2
+  exit 1
+fi
+
+exit 0

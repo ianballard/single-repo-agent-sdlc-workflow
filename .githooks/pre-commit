@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Blocks commits that stage a secret-bearing file or that contain secret material.
+#
+# WHY THIS LAYER EXISTS on top of the Claude Code hooks: this one runs inside git, so it
+# catches secrets arriving by ANY route — a human commit, an arbitrary subprocess
+# (`python -c` writes are invisible to Claude Code's Edit/Read permission rules), or a
+# path the pattern-matching missed. It also matters that this workflow accumulates all
+# changes and commits once at closeout with `git add -A`: that is precisely the moment an
+# untracked .env gets swept in.
+#
+# Uses gitleaks when installed, and falls back to a self-contained scan otherwise, so the
+# hook has no hard dependency.
+#
+# Active only when core.hooksPath points here:  git config core.hooksPath .githooks
+# Cannot be bypassed with --no-verify: that flag is denied in .claude/settings.json.
+
+set -uo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+fail=0
+
+# ---------------------------------------------------------------------------
+# 1. Refuse to commit secret-bearing FILES, reusing the Claude hook's matcher so
+#    the two layers cannot disagree about what counts as a secret file.
+# ---------------------------------------------------------------------------
+MATCHER="$REPO_ROOT/.claude/hooks/block-secret-file-access.sh"
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [[ -r "$MATCHER" ]]; then
+  # Pull in is_secret_path() without running the hook body: everything above the
+  # self-test marker is pure function definitions.
+  # shellcheck disable=SC1090
+  source <(sed -n '1,/^# Self-test$/p' "$MATCHER" | grep -v '^set ')
+fi
+
+if declare -f is_secret_path >/dev/null 2>&1; then
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    if is_secret_path "$f"; then
+      echo "BLOCKED by .githooks/pre-commit: '$f' is a secret-bearing file and must never be committed." >&2
+      fail=1
+    fi
+  done <<< "$staged"
+else
+  echo "warning: .githooks/pre-commit could not load is_secret_path from $MATCHER — file-name check skipped." >&2
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Scan the staged CONTENT for secret material.
+# ---------------------------------------------------------------------------
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks protect --staged --redact --no-banner 2>&1; then
+    echo "BLOCKED by .githooks/pre-commit: gitleaks found secret material in the staged diff." >&2
+    fail=1
+  fi
+else
+  # Self-contained fallback. Added lines only, so pre-existing content is not re-flagged.
+  added=$(git diff --cached -U0 | grep '^+' | grep -v '^+++' || true)
+  if [[ -n "$added" ]]; then
+    LIB="$REPO_ROOT/.claude/hooks/lib/secret-patterns.sh"
+    if [[ -r "$LIB" ]]; then
+      # shellcheck source=/dev/null
+      source "$LIB"
+      if reason=$(has_secret_material "$added"); then
+        echo "BLOCKED by .githooks/pre-commit: the staged diff contains $reason." >&2
+        echo "  Install gitleaks for a stronger scan: brew install gitleaks" >&2
+        fail=1
+      fi
+    else
+      echo "warning: neither gitleaks nor $LIB is available — staged-content scan skipped." >&2
+    fi
+  fi
+fi
+
+if [[ $fail -ne 0 ]]; then
+  echo "" >&2
+  echo "  Nothing was committed. Remove the secret, add a placeholder to the matching" >&2
+  echo "  .example file, and have a human supply the real value out of band." >&2
+  echo "  See 'Secrets & Privacy' in CLAUDE.md." >&2
+  echo "" >&2
+fi
+
+exit $fail
