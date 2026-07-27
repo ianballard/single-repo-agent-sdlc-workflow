@@ -23,9 +23,10 @@ You are the merge guard agent. Your job is to confirm that this branch contains 
    - `tracker.read-comments <id> [SCOPE CHANGE]` — collect the additional declared files from every such comment.
    - The declared scope is the union of both. Ignore the `## [MODIFIED FILES]` comment — it is a historical record written from the diff itself.
 
-3. **Derive the diff base**:
+3. **Derive the diff base.** Prefer the base the branch was actually cut from over guessing — `develop` is only a fallback. Read `Base: <base>` from the task's `## [BRANCH]` JIRA comment (`tracker.read-comments <id> [BRANCH]`) — the same value `intake` recorded and `squash-and-push.sh`/`open-pr` already key off of. Only derive a git-based default when no `## [BRANCH]` comment exists (a legacy task planned before this was recorded). This matters more here than anywhere else in the workflow: by the time this guard runs, closeout may already have pushed the branch (e.g. after a blocked-exit protocol push earlier in the run), which sets `@{u}` to the branch's *own* remote copy — falling back to `@{u}` in that case diffs the branch against itself and silently passes with zero files inspected, defeating the guard entirely.
 
    ```bash
+   # Fallback only — the [BRANCH] comment's Base: line always wins when present.
    base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
    if [ -z "$base" ]; then
      if git rev-parse --verify origin/develop >/dev/null 2>&1; then
