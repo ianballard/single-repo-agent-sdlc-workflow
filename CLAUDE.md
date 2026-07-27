@@ -46,6 +46,12 @@ The `.claude/skills/` directory contains custom Claude Code skills that implemen
 - **commit** - Creates conventional commit messages
 - **manage-backlog-tasks** - Implements the issue-tracker contract; holds per-tracker adapters
 
+**Doctrine-mode Skills** (the un-ticketed lane — see "Ways to work in this repo" in `README.md`):
+- **delegate-plan** - Invocation 1. Triage → ideation → PRD → spec with Definition of Done → plan → red-team stress test, committed to `docs/specs/YYYY-MM-DD-<slug>/`. Never implements.
+- **red-team-plan** - Step 5b of delegate-plan. Adversarially stress-tests `spec.md`, its DoD, and `plan.md` before execution is authorized, across seven dimensions. Covers **solution soundness** (build vs. buy, technology fitness, version/compatibility claims verified against the actual manifests, stack coherence, ADR conflicts, simpler alternatives, failure and scale characteristics, unaddressed non-functional requirements) as well as **contract integrity** (a DoD a mock could satisfy, a spec that is not self-contained, DoD criteria with no covering task). Runs as a **fresh subagent given only the artifact paths** — never the planning conversation, since a planner reviewing its own plan shares every assumption that produced it. Read-only; it reports, the planner revises. Max 2 revision cycles.
+- **delegate-execute** - Invocation 2. Delegates the plan to subagents and verifies every deliverable against the pre-committed DoD itself, never the subagent's self-report.
+- **definition-of-done** - Writes a concrete, checkable DoD into a spec before any code exists; selects verification modes with honest costs.
+
 The workflow skill enforces a strict process (see `.claude/skills/workflow/SKILL.md`):
 1. Check for work → 2. Run intake (create branch) → 2b. Set up worktree → 3. Assess task definition → 3b. Optional human intake review → 4. Plan the task → 4a. AI hostile plan review → 4b. Human plan review (required) → 5. Implement changes → 6. Verify acceptance criteria → 7. Unit tests → 8. E2E tests → 8b. Lint & format → 9. Write implementation notes → 10. AI code review → 10b. Optional human code review → 11. Audit all steps → 11b. Self-improvement recommendation → 12. Merge guard (scope check) → 13. Closeout (squash, push, open GitHub PR, move to Human Code Review, tear down worktree)
 
@@ -102,8 +108,9 @@ Second trade-off, currently accepted: an `ask` rule only prompts in a permission
 
 ## Secrets & Privacy
 
-- **Never read, edit, grep, or glob a secret-bearing file.** This covers `.env` and every `.env.*` variant at any depth, `*.env`, key material (`*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa`, `id_ed25519`, …), `*.tfvars`, `.netrc`, `.npmrc`, `.pypirc`, `~/.aws/credentials`, `~/.ssh/**`, `~/.kube/config`, `~/.docker/config.json`, `~/.config/gh/hosts.yml`, and project-local secret sidecars like `.claude/jira-connection.local.json`.
-- **Templates are explicitly allowed**: `.env.example`, `.env.sample`, `.env.template`, `.env.dist`, `*.pub`, and `.claude/settings.local.json`. When a task needs a new configuration value, add it to the `.example` file and ask the human to populate the real one out of band.
+- **Never read, edit, grep, or glob a secret-bearing file.** This covers `.env` and every `.env.*` variant at any depth, `*.env`, key material (`*.pem`, `*.key`, `*.p12`, `*.pfx`, `id_rsa`, `id_ed25519`, …), `*.tfvars`, `.netrc`, `.npmrc`, `.pypirc`, `~/.aws/credentials`, `~/.ssh/**`, `~/.kube/config`, `~/.docker/config.json`, and `~/.config/gh/hosts.yml`.
+- **Templates and local config are explicitly allowed**: `.env.example`, `.env.sample`, `.env.template`, `.env.dist`, `*.pub`, and `.claude/*.local.json`. When a task needs a new configuration value, add it to the `.example` file and ask the human to populate the real one out of band.
+- `.claude/*.local.json` — including `jira-connection.local.json` — is **local configuration, not secret material**. It records which tracker connection to use, and the agent must be able to read it. Credentials live in the MCP connection, not in the file. It stays gitignored, and `Edit(**/.claude/settings.local.json)` remains an `ask` rule since it carries permission grants.
 - This is enforced by `.claude/hooks/block-secret-file-access.sh` rather than a permission rule, because gitignore-style permission patterns have **no negation operator** — `deny(.env.*)` would also swallow `.env.example`, and no `allow` rule can claw it back.
 - **Never write secret material into a file or a command.** AWS access key IDs (`AKIA…`), PEM private-key blocks, and `sk-…` API keys are blocked in Edit/Write content and in Bash command strings.
 - **Never print a live credential into the transcript.** `gh auth token`, `gh config get -h github.com oauth_token`, and equivalents are denied — transcripts flow into logs, memory files, and compaction summaries.

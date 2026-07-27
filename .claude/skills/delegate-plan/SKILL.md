@@ -1,6 +1,6 @@
 ---
 name: delegate-plan
-description: Invocation 1 of doctrine mode, the lane for un-ticketed builds up to full greenfield projects — use when asked to plan or build something with no JIRA ticket. Triages, then runs brainstorm → grill → PRD → spec with Definition of Done → plan, commits the artifacts to docs/specs/, and surfaces human prerequisites. Execution happens in a separate delegate-execute invocation after human review. Not for ticketed work (use workflow) or pure questions/analysis.
+description: Invocation 1 of doctrine mode, the lane for un-ticketed builds up to full greenfield projects — use when asked to plan or build something with no JIRA ticket. Triages, then runs brainstorm → grill → PRD → spec with Definition of Done → plan → independent red-team stress test, commits the artifacts to docs/specs/, and surfaces human prerequisites. Execution happens in a separate delegate-execute invocation after human review. Not for ticketed work (use workflow) or pure questions/analysis.
 ---
 
 You are the doctrine-mode planner. Doctrine mode maximizes verified output:
@@ -72,6 +72,45 @@ can own, dependencies marked so execution can parallelize. Include a
 everything the human must have ready before execution starts (e.g. cloud
 account created, credentials configured so they can deploy when the time
 comes).
+
+## Step 5b — Red-team stress test (REQUIRED)
+
+Dispatch the `red-team-plan` skill as a **fresh subagent**, passing it only the
+trail directory path. Do not pass it this conversation, and do not summarize
+the artifacts for it — its value comes entirely from not sharing your
+assumptions. It is read-only; it reports, you revise.
+
+It reviews two things, and both can block:
+
+- **Is the solution sound?** Build vs. buy (is a component being hand-rolled that
+  an off-the-shelf library already solves), technology fitness, version and
+  compatibility claims checked against the actual manifests, stack coherence,
+  conflicts with any accepted ADR, a materially simpler alternative, failure and
+  scale characteristics, and the non-functional requirements the spec implies but
+  never addresses.
+- **Is the contract real?** `delegate-execute` verifies deliverables against the
+  DoD rather than a subagent's self-report, so a criterion a mock can satisfy
+  yields a confident false green. And execution subagents never see this
+  conversation, so anything implicit in `spec.md` is missing rather than assumed.
+
+Expect the deepest findings to land on `spec.md`, not `plan.md` — a wrong
+technology or a build-it-yourself decision is a spec problem. Revising the spec
+here is far cheaper than discovering it mid-execution.
+
+Handle the verdict:
+
+- `RED_TEAM_PASSED` — continue to Step 6. Warnings and minors do not block;
+  fold any you accept into the artifacts, and leave `red-team.md` in the trail
+  as the record of what you chose not to act on.
+- `RED_TEAM_BLOCKED` — revise the artifacts and re-dispatch. **At most 2
+  revision cycles.** If blocking findings survive the second, stop with
+  `WORKFLOW_BLOCKED: red-team review unresolved after 2 revisions` and hand it
+  to the human. Do not proceed to Step 6 with unresolved blocking findings, and
+  do not argue the reviewer down — either fix the artifact or record why the
+  finding is wrong in `red-team.md`.
+
+Applies to every tier that produced artifacts. The trivial tier (done inline,
+no spec) has nothing to review and skips this step.
 
 ## Step 6 — Hand off
 

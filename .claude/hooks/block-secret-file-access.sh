@@ -29,7 +29,6 @@ is_exempt() {
   case "$base" in
     *.example|*.example.*|*.sample|*.sample.*|*.template|*.template.*|*.dist|*.schema) return 0 ;;
     *.pub) return 0 ;;               # public keys are not secret
-    settings.local.json) return 0 ;; # permissions file; guarded by ask rules instead
   esac
   return 1
 }
@@ -59,9 +58,9 @@ is_secret_path() {
     */.docker/config.json)            return 0 ;;
     */.config/gh/hosts.yml)           return 0 ;;
     */.kube/config)                   return 0 ;;
-    # project-local secret sidecars, e.g. .claude/jira-connection.local.json
-    */.claude/*.local.json)           return 0 ;;
-    .claude/*.local.json)             return 0 ;;
+    # NOTE: .claude/*.local.json is deliberately NOT treated as secret. Those files hold
+    # local configuration — which tracker connection to use, per-machine permissions — and
+    # the agent needs to read them to work. Credentials live in the MCP connection, not here.
   esac
 
   return 1
@@ -89,14 +88,17 @@ if [[ "${1:-}" == "--self-test" ]]; then
   blk "certs/server.pem"
   blk "$HOME/.ssh/id_ed25519"
   blk "$HOME/.aws/credentials"
-  blk ".claude/jira-connection.local.json"
   blk "infra/terraform.tfvars"
   alw ".env.example"
   alw "backend/.env.sample"
   alw "e2e/.env.template"
   alw "infra/terraform.tfvars.example"
   alw "$HOME/.ssh/id_ed25519.pub"
+  # .claude/*.local.json is local configuration, not secret material: the agent must be
+  # able to read which tracker connection to use.
   alw ".claude/settings.local.json"
+  alw ".claude/jira-connection.local.json"
+  alw "worktrees/feature-x/.claude/jira-connection.local.json"
   alw "frontend/src/environment.ts"
   alw "docs/adr/0001-env-handling.md"
   alw "backend/app/main.py"
