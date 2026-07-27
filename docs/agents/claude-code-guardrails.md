@@ -78,6 +78,12 @@ Bash(gh pr merge*)  Bash(gh auth token*)  Bash(gh repo delete*)  Bash(gh secret 
 `.env.*` is not a deny rule — it would swallow `.env.example` with no way to re-allow it.
 The hook owns that family.
 
+`.claude/*.local.json` is **not** secret and is not blocked. It holds local configuration
+(which tracker connection to use, per-machine permission grants) that the agent needs to
+read; credentials live in the MCP connection. It stays gitignored, and
+`Edit(**/.claude/settings.local.json)` remains an `ask` rule because it carries permission
+grants.
+
 ---
 
 ## 3. Rules owned by hooks, not `settings.json`

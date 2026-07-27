@@ -9,6 +9,9 @@ logs/
 # Playwright MCP session artifacts (console/page dumps from browser automation)
 .playwright-mcp/
 
+# macOS
+.DS_Store
+
 # Secrets — never commit. Templates (.env.example etc.) are intentionally tracked.
 .env
 .env.*

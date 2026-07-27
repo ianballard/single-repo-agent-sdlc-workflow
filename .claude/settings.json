@@ -114,7 +114,6 @@
       "Read(~/.aws/credentials)",
       "Read(~/.ssh/**)",
       "Read(~/.netrc)",
-      "Read(**/.claude/*.local.json)",
       "Bash(git reset --hard*)",
       "Bash(git checkout -- *)",
       "Bash(git branch -D*)",
