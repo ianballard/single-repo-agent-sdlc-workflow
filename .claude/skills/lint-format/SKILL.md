@@ -7,9 +7,10 @@ You are the lint/format agent. Your job is to bring the changed code into compli
 
 ## Deriving the diff base
 
-From the workspace root, derive the base branch for diffing:
+Prefer the base the branch was actually cut from over guessing — `develop` is only a fallback. Read `Base: <base>` from the task's `## [BRANCH]` JIRA comment (`tracker.read-comments <id> [BRANCH]`) — the same value `intake` recorded and `squash-and-push.sh`/`open-pr` already key off of. Only derive a git-based default when no `## [BRANCH]` comment exists (a legacy task planned before this was recorded):
 
 ```bash
+# Fallback only — the [BRANCH] comment's Base: line always wins when present.
 base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [ -z "$base" ]; then
   if git rev-parse --verify origin/develop >/dev/null 2>&1; then
@@ -60,12 +61,15 @@ npm run lint          # frontend / e2e
 ruff check .           # backend
 ```
 
-3b. **If the auto-fix pass modified any files, re-run the unit tests for those areas.** Lint fixers can change behavior, and the test steps (7, 8) already passed before this skill ran — autofixed code must not ship untested. Detect whether fixes were applied by hashing the diff before and after step 2:
+3b. **If the auto-fix pass modified any files, re-run the unit tests for those areas.** Lint fixers can change behavior, and the test steps (7, 8) already passed before this skill ran — autofixed code must not ship untested. Detect whether fixes were applied by hashing the diff before and after step 2 — `git diff` alone only covers tracked files, so register any untracked new files with `git add -N` (intent-to-add: registers the path so it shows up in `git diff`, without staging content) first, on both sides of the comparison, or a formatter rewriting a brand-new file goes undetected:
 
 ```bash
 # before step 2:
+git add -N $(git ls-files --others --exclude-standard) 2>/dev/null
 before="$(git diff | git hash-object --stdin)"
-# after step 2:
+
+# after step 2 (re-register in case step 2 itself created new files):
+git add -N $(git ls-files --others --exclude-standard) 2>/dev/null
 after="$(git diff | git hash-object --stdin)"
 ```
 

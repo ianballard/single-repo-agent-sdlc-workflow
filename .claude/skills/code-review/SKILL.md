@@ -13,9 +13,10 @@ This skill is the orchestrator: it derives the diff base, dispatches the reviewe
 
 ## Deriving the diff base
 
-From the workspace root:
+Prefer the base the branch was actually cut from over guessing — `develop` is only a fallback. Read `Base: <base>` from the task's `## [BRANCH]` JIRA comment (`tracker.read-comments <id> [BRANCH]`) — the same value `intake` recorded and `squash-and-push.sh`/`open-pr` already key off of. Only derive a git-based default when no `## [BRANCH]` comment exists (a legacy task planned before this was recorded):
 
 ```bash
+# Fallback only — the [BRANCH] comment's Base: line always wins when present.
 base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [ -z "$base" ]; then
   if git rev-parse --verify origin/develop >/dev/null 2>&1; then

@@ -7,9 +7,10 @@ You are the unit test agent. Your job is to ensure comprehensive unit test cover
 
 ## Deriving the diff base
 
-From the workspace root, derive the base branch for diffing:
+Prefer the base the branch was actually cut from over guessing — `develop` is only a fallback. Read `Base: <base>` from the task's `## [BRANCH]` JIRA comment (`tracker.read-comments <id> [BRANCH]`) — the same value `intake` recorded and `squash-and-push.sh`/`open-pr` already key off of. Only derive a git-based default when no `## [BRANCH]` comment exists (a legacy task planned before this was recorded):
 
 ```bash
+# Fallback only — the [BRANCH] comment's Base: line always wins when present.
 base="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
 if [ -z "$base" ]; then
   if git rev-parse --verify origin/develop >/dev/null 2>&1; then
@@ -22,10 +23,11 @@ fi
 
 ## Process
 
-1. Review changes on the current branch:
+1. Review changes on the current branch (commits are deferred to closeout, so diff the working tree, not just `HEAD`):
 
 ```bash
-git diff "$base"...HEAD -- frontend/ backend/
+git diff "$base" -- frontend/ backend/
+git ls-files --others --exclude-standard -- frontend/ backend/
 ```
 
 2. Identify all files that need unit tests:
