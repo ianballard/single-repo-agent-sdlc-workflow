@@ -52,6 +52,15 @@ accept/reject call against the pre-committed DoD in `spec.md`.
 - Mechanical evidence gathering (running tests, driving the app, executing
   DoD checks) may be delegated to a fresh subagent that did not write the
   code — but the judgment on that evidence is yours and is not delegable.
+- **Driving the app is the `run` skill's job.** It looks for a project
+  `run-*` skill first and falls back to per-project-type patterns when none
+  exists — the normal greenfield case, not a blocker. Borrow its verdict
+  discipline: BLOCKED (never reached a state where the behavior is
+  observable) is not FAIL, and is also not a pass; ambiguous output is a
+  failure with the raw capture attached, not something to interpret
+  favorably. And read an evidence plan back before running it — if every
+  step is build, typecheck, or run-the-test-file, that is a CI rerun, not
+  verification that a running system works.
 - Bounded: 2 fix iterations per deliverable. After that, stop and surface
   the failing criteria to the human.
 
@@ -91,7 +100,15 @@ Before presenting the work as complete:
 2. Append `## Closeout` to `spec.md`: what was delegated to which subagent
    (and model, if overridden), verification outcome per DoD criterion, and
    any deviations from the spec with one-line reasons.
-3. Commit everything on the feature branch — the trail directory and the
+3. Record the invocation you actually verified: the command a fresh context
+   uses to start the thing and exercise it, plus the deployed-target check if
+   the spec's run surface includes one. If `run` fell back to generic
+   patterns and needed help to work — packages installed, env vars set,
+   config patched, a driver written — note `/run-skill-generator` as a human
+   follow-up to capture that recipe as a project `run-*` skill. It is
+   human-invocable only, and it needs the built thing to exist, so closeout
+   is the right moment to raise it. If the fallback just worked, say nothing.
+4. Commit everything on the feature branch — the trail directory and the
    implementation land in the same PR, so the contract and the diff arrive
    atomically.
 

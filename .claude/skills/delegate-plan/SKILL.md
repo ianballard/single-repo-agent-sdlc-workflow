@@ -49,7 +49,7 @@ the `definition-of-done` skill, before any code exists. Flag criteria
 requiring a human action (deploys, account setup, registrations) as
 human-gated.
 
-Resolve two things here that execution cannot decide for itself, or they
+Resolve three things here that execution cannot decide for itself, or they
 become skipped specs and false-green suites later:
 
 - **Real-dependency verification.** For every integration seam
@@ -62,6 +62,12 @@ become skipped specs and false-green suites later:
   system must state how the test gets its state there (test accounts,
   confirmation flows, seed data). Fold the human-run parts into
   `## Human prerequisites` (Step 5).
+- **Run surface.** State in `spec.md` where this thing runs: `local only`,
+  `local + deployed`, or `no run surface` (a library, a docs or config
+  change — nothing to launch). One line. It decides which runnability
+  criteria the DoD carries (`definition-of-done` rule 8). "Local only" is a
+  perfectly good answer; the requirement is that the question is answered
+  explicitly, not that everything deploys.
 
 ## Step 5 — Plan
 
