@@ -52,6 +52,23 @@ standalone whenever "done" needs to be pinned down before implementation.
    steps, seed data, teardown. An unresolved "how does the test get a
    confirmed user?" becomes a skipped spec at execution time. This
    provisioning story also feeds the plan's `## Human prerequisites`.
+8. **Runnability follows the spec's declared run surface.** `spec.md` states
+   where the thing runs — `local only`, `local + deployed`, or `no run
+   surface`. Carry criteria to match, and no more:
+   - **Any runnable surface** → one criterion that a fresh context with no
+     conversation history can start it and exercise it using only committed
+     repo instructions. Phrase it as the capability, never as the tooling: on
+     a greenfield build no project run skill exists yet, and the `run`
+     skill's fallback patterns are a legitimate way to satisfy it.
+   - **`local + deployed`** → one criterion exercising the deployed target,
+     usually the post-deploy smoke at the human-gated deploy checkpoint. One
+     is enough. Do not require that the whole suite run against both.
+   - **`no run surface`** → no runnability criterion. Record that in one line
+     rather than inventing one.
+
+   The first of these is load-bearing, not ceremonial: `delegate-execute`
+   delegates evidence gathering to a fresh subagent that did not write the
+   code, which is only possible if a stranger can actually start the thing.
 
 ## Verification mode menu
 
@@ -64,7 +81,7 @@ standalone whenever "done" needs to be pinned down before implementation.
 | Human-gated checkpoint | Variable | Steps the agent can't or mustn't perform alone: deploys, cloud account setup, external registrations. Name the human action, its prerequisites, and the post-action verification (e.g. post-deploy smoke) the agent runs once the human is done. |
 | Eval harness | Expensive | ONLY for AI-behavior features or repeated-task batches where it amortizes. For a normal feature, "done" is tests + driven verification + rubric review; anything more is eval theater. Say so if asked for more. |
 
-Read this menu together with rules 5–7: a cheap mode that only exercises a
+Read this menu together with rules 5–8: a cheap mode that only exercises a
 mock or a static graph is not the right mode for an integration seam or an
 infra resource, however cheap it looks.
 

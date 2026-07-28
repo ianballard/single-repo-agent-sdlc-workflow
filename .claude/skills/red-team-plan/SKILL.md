@@ -128,6 +128,13 @@ expected — it is far cheaper here than during execution.
   requires this — verify it was *applied*, not merely mentioned.
 - For each criterion naming an external system, is it stated **how the test gets its
   state there** (test accounts, confirmation flows, seed data)?
+- Does `spec.md` state its **run surface** (`local only`, `local + deployed`, or `no run
+  surface`), and do the DoD's runnability criteria match that answer (`definition-of-done`
+  rule 8)? The finding is a spec that never answers the question, or a DoD that
+  contradicts the answer given — **not** the answer itself. "Local only" is correct for a
+  CLI, a library, or a config change, and flagging it is a manufactured finding. Likewise,
+  on a greenfield build the absence of a project `run-*` skill is not a finding: nothing
+  exists yet to describe.
 
 ### 3. Spec self-containment
 
